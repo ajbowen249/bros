@@ -158,13 +158,11 @@ void __fastcall__ set_rand(unsigned int seed);
 //buffer pointer could be changed during rendering, but it only takes effect on a new frame
 //number of transferred bytes is limited by vblank time
 //to disable updates, call this function with NULL pointer
-
 //the update data format:
 // MSB, LSB, byte for a non-sequental write
 // MSB|NT_UPD_HORZ, LSB, LEN, [bytes] for a horizontal sequence
 // MSB|NT_UPD_VERT, LSB, LEN, [bytes] for a vertical sequence
 // NT_UPD_EOF to mark end of the buffer
-
 //length of this data should be under 256 bytes
 void __fastcall__ set_vram_update(unsigned char *buf);
 

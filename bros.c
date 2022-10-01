@@ -91,6 +91,9 @@ void runApplications() {
         case PS_RUNNING:
             if (process->proc) {
                 process->proc();
+            } else {
+                // Flag exit if no proc
+                process->state = PS_AWAITING_EXIT;
             }
             break;
         case PS_AWAITING_EXIT:
@@ -101,6 +104,15 @@ void runApplications() {
         default:
             break;
         }
+    }
+}
+
+void initializeTable() {
+    unsigned int pid;
+    Process* process;
+    for (pid = 0; pid < MAX_BROS_PROCESSES; ++pid) {
+        process = &g_processTable.processes[pid];
+        process->state = PS_INACTIVE;
     }
 }
 
@@ -117,9 +129,42 @@ void put_str(unsigned int adr, const char* str) {
     }
 }
 
+void doSomething();
+void doSomething() {
+    put_str(NTADR_A(2, 12), "Called from application!");
+}
+
+unsigned char* g_workRam = WRAM_START;
+
 void main(void) {
+    unsigned int testAppIdx;
+    unsigned int doSomethingAddr = (unsigned int)doSomething;
+
+    unsigned char TestApplication1[19] = {
+        'B', 'R', 'O', 'S',
+        0x01, 0x00, // ABI version
+        0x00, 0x00, // No labels
+        0x00, 0x00, // No extra ram
+        0x01, 0x00, // Start at offset 1
+        0x00, 0x00, // No proc
+        0x00, 0x00, // No exit hook
+    };
+
+    TestApplication1[16] = 0x20;
+    TestApplication1[17] = (unsigned char)doSomethingAddr;
+    TestApplication1[18] = (unsigned char)(doSomethingAddr >> 8);
+
+    initializeTable();
+
     g_pid = BROS_INVALID_PID;
     setSystemError(SERR_SUCCESS);
+
+
+    allocateProcess((ApplicationHeader*)TestApplication1, 19);
+    for (testAppIdx = 0; testAppIdx < 19; ++testAppIdx) {
+        *(g_workRam + testAppIdx) = TestApplication1[testAppIdx];
+    }
+
     // rendering is disabled at the startup, the palette is all black
 
     pal_col(1, 0x30); // set while color
@@ -131,13 +176,7 @@ void main(void) {
     // there is a way to update small number of nametable tiles while rendering
     // is enabled, using set_vram_update and an update list
 
-    put_str(NTADR_A(2, 2), "HELLO, WORLD!");
-    put_str(NTADR_A(2, 6), "THIS CODE PRINTS SOME TEXT");
-    put_str(NTADR_A(2, 7), "USING ASCII-ENCODED CHARSET");
-    put_str(NTADR_A(2, 8), "(WITH CAPITAL LETTERS ONLY)");
-    put_str(NTADR_A(2, 10), "TO USE CHR MORE EFFICIENTLY");
-    put_str(NTADR_A(2, 11), "YOU'D NEED A CUSTOM ENCODING");
-    put_str(NTADR_A(2, 12), "AND A CONVERSION TABLE");
+    put_str(NTADR_A(2, 2), "INIT TEXT");
 
     put_str(NTADR_A(2, 16), "CURRENT VIDEO MODE IS");
 

@@ -46,7 +46,7 @@ typedef struct _ApplicationHeader {
     char s;
 
     // Which BOS version was this compiled for
-    unsigned char abiVersion;
+    unsigned int abiVersion;
 
     // How many labels are in the label section
     unsigned int labelCount;

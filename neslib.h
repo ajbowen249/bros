@@ -10,6 +10,8 @@
 //          unrle_vram renamed to vram_unrle, with adr argument removed
 // 060414 - many fixes and improvements, including sequental VRAM updates
 // previous versions were created since mid-2011, there were many updates
+#ifndef NESLIB_H
+#define NESLIB_H
 
 // Hush the IDE
 #ifndef __fastcall__
@@ -251,3 +253,5 @@ void __fastcall__ delay(unsigned char frames);
 
 #define MSB(x)			(((x)>>8))
 #define LSB(x)			(((x)&0xff))
+
+#endif

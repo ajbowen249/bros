@@ -16,6 +16,19 @@ void setSystemError(SystemError err) {
     g_systemError = err;
 }
 
+// put a string into the nametable
+void put_str(unsigned int adr, const char* str) {
+    vram_adr(adr);
+
+    while (1) {
+        if (!*str) {
+            break;
+        }
+
+        vram_put((*str++) - 0x20); // -0x20 because ASCII code 0x20 is placed in tile 0 of the CHR
+    }
+}
+
 bool allocateProcess(const ApplicationHeader* header, unsigned int fileSize) {
     unsigned int offset = 0;
     unsigned int pid = 0;
@@ -65,6 +78,7 @@ bool allocateProcess(const ApplicationHeader* header, unsigned int fileSize) {
         process->proc = header->procOffset ? WRAM_START + offset + header->procOffset : 0;
         process->onExit = header->exitOffset ? WRAM_START + offset + header->exitOffset : 0;
         process->state = PS_LOADING;
+        put_str(NTADR_A(2, 3), "SCHEDULED");
 
         return 1;
     }
@@ -83,8 +97,9 @@ void runApplications() {
         switch (process->state)
         {
         case PS_LOADED:
+            put_str(NTADR_A(2, 16), "CALL START");
             if (process->start) {
-                process->start();
+               process->start();
             }
             process->state = PS_RUNNING;
             break;
@@ -116,22 +131,10 @@ void initializeTable() {
     }
 }
 
-// put a string into the nametable
-void put_str(unsigned int adr, const char* str) {
-    vram_adr(adr);
-
-    while (1) {
-        if (!*str) {
-            break;
-        }
-
-        vram_put((*str++) - 0x20); // -0x20 because ASCII code 0x20 is placed in tile 0 of the CHR
-    }
-}
-
-void doSomething();
-void doSomething() {
-    put_str(NTADR_A(2, 12), "Called from application!");
+int __fastcall__ doSomething();
+int doSomething() {
+    put_str(NTADR_A(2, 4), "ACTUALLY CALLED");
+    return 0;
 }
 
 unsigned char* g_workRam = WRAM_START;
@@ -145,7 +148,7 @@ void main(void) {
         0x01, 0x00, // ABI version
         0x00, 0x00, // No labels
         0x00, 0x00, // No extra ram
-        0x01, 0x00, // Start at offset 1
+        0x10, 0x00, // Start at offset 16
         0x00, 0x00, // No proc
         0x00, 0x00, // No exit hook
     };
@@ -158,16 +161,19 @@ void main(void) {
 
     g_pid = BROS_INVALID_PID;
     setSystemError(SERR_SUCCESS);
+    pal_col(1, 0x30); // set while color
 
 
     allocateProcess((ApplicationHeader*)TestApplication1, 19);
     for (testAppIdx = 0; testAppIdx < 19; ++testAppIdx) {
-        *(g_workRam + testAppIdx) = TestApplication1[testAppIdx];
+        unsigned int* target = WRAM_START + testAppIdx;
+        *(target) = TestApplication1[testAppIdx];
     }
+
+    g_processTable.processes[0].state = PS_LOADED;
 
     // rendering is disabled at the startup, the palette is all black
 
-    pal_col(1, 0x30); // set while color
 
     // you can't put data into vram through vram_put while rendering is enabled
     // so you have to disable rendering to put things like text or a level map
@@ -177,14 +183,6 @@ void main(void) {
     // is enabled, using set_vram_update and an update list
 
     put_str(NTADR_A(2, 2), "INIT TEXT");
-
-    put_str(NTADR_A(2, 16), "CURRENT VIDEO MODE IS");
-
-    if (ppu_system()) {
-        put_str(NTADR_A(24, 16), "NTSC");
-    } else {
-        put_str(NTADR_A(24, 16), "PAL");
-    }
 
     ppu_on_all(); // enable rendering
 

@@ -131,9 +131,16 @@ void initializeTable() {
     }
 }
 
-int __fastcall__ doSomething();
+int doSomething();
 int doSomething() {
-    put_str(NTADR_A(2, 4), "ACTUALLY CALLED");
+    unsigned int idx;
+    const char* string = "TEST";
+    vram_adr(NTADR_A(2, 4));
+
+    for (idx = 0; idx < 4; idx++) {
+        vram_put((string[idx]) - 0x20);
+    }
+
     return 0;
 }
 
@@ -143,7 +150,7 @@ void main(void) {
     unsigned int testAppIdx;
     unsigned int doSomethingAddr = (unsigned int)doSomething;
 
-    unsigned char TestApplication1[19] = {
+    unsigned char TestApplication1[20] = {
         'B', 'R', 'O', 'S',
         0x01, 0x00, // ABI version
         0x00, 0x00, // No labels
@@ -153,9 +160,11 @@ void main(void) {
         0x00, 0x00, // No exit hook
     };
 
+    // TestApplication1[16] = 0x60;
     TestApplication1[16] = 0x20;
     TestApplication1[17] = (unsigned char)doSomethingAddr;
     TestApplication1[18] = (unsigned char)(doSomethingAddr >> 8);
+    TestApplication1[19] = 0x60; // rts
 
     initializeTable();
 
@@ -164,8 +173,8 @@ void main(void) {
     pal_col(1, 0x30); // set while color
 
 
-    allocateProcess((ApplicationHeader*)TestApplication1, 19);
-    for (testAppIdx = 0; testAppIdx < 19; ++testAppIdx) {
+    allocateProcess((ApplicationHeader*)TestApplication1, 20);
+    for (testAppIdx = 0; testAppIdx < 20; ++testAppIdx) {
         unsigned int* target = WRAM_START + testAppIdx;
         *(target) = TestApplication1[testAppIdx];
     }

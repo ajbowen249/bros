@@ -78,7 +78,6 @@ bool allocateProcess(const ApplicationHeader* header, unsigned int fileSize) {
         process->proc = header->procOffset ? WRAM_START + offset + header->procOffset : 0;
         process->onExit = header->exitOffset ? WRAM_START + offset + header->exitOffset : 0;
         process->state = PS_LOADING;
-        put_str(NTADR_A(2, 3), "SCHEDULED");
 
         return 1;
     }
@@ -97,7 +96,6 @@ void runApplications() {
         switch (process->state)
         {
         case PS_LOADED:
-            put_str(NTADR_A(2, 16), "CALL START");
             if (process->start) {
                process->start();
             }
@@ -133,14 +131,10 @@ void initializeTable() {
 
 int doSomething();
 int doSomething() {
-    unsigned int idx;
-    const char* string = "TEST";
-    vram_adr(NTADR_A(2, 4));
-
-    for (idx = 0; idx < 4; idx++) {
-        vram_put((string[idx]) - 0x20);
-    }
-
+    const char* str = "STRING TEST";
+    ppu_off();
+    put_str(NTADR_A(2, 5), str);
+    ppu_on_all();
     return 0;
 }
 

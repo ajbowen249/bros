@@ -1,6 +1,7 @@
 #include "bros.h"
 
 #include "neslib.h"
+#include <stdlib.h>
 
 // The actual process table
 ProcessTable g_processTable;
@@ -17,6 +18,7 @@ void setSystemError(SystemError err) {
 }
 
 // put a string into the nametable
+void __fastcall__ put_str(unsigned int adr, const char* str);
 void put_str(unsigned int adr, const char* str) {
     vram_adr(adr);
 
@@ -129,36 +131,62 @@ void initializeTable() {
     }
 }
 
-int doSomething();
-int doSomething() {
-    const char* str = "STRING TEST";
+int testApp1Counter;
+
+void testApp1Start() {
+    testApp1Counter = 0;
     ppu_off();
-    put_str(NTADR_A(2, 5), str);
+    put_str(NTADR_A(2, 5), "TEST APP 1 START");
     ppu_on_all();
-    return 0;
+    return;
+}
+
+void testApp1Proc() {
+    char outputLine[20];
+    int i;
+    for (i = 0; i < 20; i++) {
+        outputLine[i] = 0;
+    }
+    if (testApp1Counter++ % 60 == 0) {
+        ppu_off();
+        itoa(testApp1Counter / 60, outputLine, 10);
+        put_str(NTADR_A(2, 6), "    ");
+        put_str(NTADR_A(2, 6), outputLine);
+        ppu_on_all();
+    }
+    return;
 }
 
 unsigned char* g_workRam = WRAM_START;
 
 void main(void) {
     unsigned int testAppIdx;
-    unsigned int doSomethingAddr = (unsigned int)doSomething;
 
-    unsigned char TestApplication1[20] = {
+    unsigned int testApp1StartAddr = (unsigned int)testApp1Start;
+    unsigned int testApp1ProcAddr = (unsigned int)testApp1Proc;
+
+    #define TA1_LENGTH 24
+    unsigned char TestApplication1[TA1_LENGTH] = {
         'B', 'R', 'O', 'S',
         0x01, 0x00, // ABI version
         0x00, 0x00, // No labels
         0x00, 0x00, // No extra ram
         0x10, 0x00, // Start at offset 16
-        0x00, 0x00, // No proc
+        0x14, 0x00, // Proc at offset 20
         0x00, 0x00, // No exit hook
     };
 
-    // TestApplication1[16] = 0x60;
+    // start()
     TestApplication1[16] = 0x20;
-    TestApplication1[17] = (unsigned char)doSomethingAddr;
-    TestApplication1[18] = (unsigned char)(doSomethingAddr >> 8);
+    TestApplication1[17] = (unsigned char)testApp1StartAddr;
+    TestApplication1[18] = (unsigned char)(testApp1StartAddr >> 8);
     TestApplication1[19] = 0x60; // rts
+
+    // proc()
+    TestApplication1[20] = 0x20;
+    TestApplication1[21] = (unsigned char)testApp1ProcAddr;
+    TestApplication1[22] = (unsigned char)(testApp1ProcAddr >> 8);
+    TestApplication1[23] = 0x60; // rts
 
     initializeTable();
 
@@ -167,8 +195,8 @@ void main(void) {
     pal_col(1, 0x30); // set while color
 
 
-    allocateProcess((ApplicationHeader*)TestApplication1, 20);
-    for (testAppIdx = 0; testAppIdx < 20; ++testAppIdx) {
+    allocateProcess((ApplicationHeader*)TestApplication1, TA1_LENGTH);
+    for (testAppIdx = 0; testAppIdx < TA1_LENGTH; ++testAppIdx) {
         unsigned int* target = WRAM_START + testAppIdx;
         *(target) = TestApplication1[testAppIdx];
     }

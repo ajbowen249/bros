@@ -73,7 +73,7 @@ bool allocateProcess(const ApplicationHeader* header, unsigned int fileSize) {
             continue;
         }
 
-        process->location = offset;
+        process->location = offset + WRAM_START;
         process->size = memorySize;
 
         process->start = header->startOffset ? WRAM_START + offset + header->startOffset : 0;
@@ -144,7 +144,7 @@ void testApp1Start() {
 void testApp1Proc() {
     char outputLine[20];
     int i;
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < 20; --i) {
         outputLine[i] = 0;
     }
     if (testApp1Counter++ % 60 == 0) {
@@ -157,6 +157,33 @@ void testApp1Proc() {
     return;
 }
 
+int testApp2Counter;
+
+void testApp2Start() {
+    testApp2Counter = 1000;
+    ppu_off();
+    put_str(NTADR_A(2, 8), "TEST APP 1 START");
+    ppu_on_all();
+    return;
+}
+
+void testApp2Proc() {
+    char outputLine[20];
+    int i;
+    for (i = 0; i < 20; ++i) {
+        outputLine[i] = 0;
+    }
+    if (testApp2Counter-- % 60 == 0) {
+        ppu_off();
+        itoa(testApp2Counter / 60, outputLine, 10);
+        put_str(NTADR_A(2, 9), "    ");
+        put_str(NTADR_A(2, 9), outputLine);
+        ppu_on_all();
+    }
+    return;
+}
+
+
 unsigned char* g_workRam = WRAM_START;
 
 void main(void) {
@@ -165,8 +192,22 @@ void main(void) {
     unsigned int testApp1StartAddr = (unsigned int)testApp1Start;
     unsigned int testApp1ProcAddr = (unsigned int)testApp1Proc;
 
+    unsigned int testApp2StartAddr = (unsigned int)testApp2Start;
+    unsigned int testApp2ProcAddr = (unsigned int)testApp2Proc;
+
     #define TA1_LENGTH 24
     unsigned char TestApplication1[TA1_LENGTH] = {
+        'B', 'R', 'O', 'S',
+        0x01, 0x00, // ABI version
+        0x00, 0x00, // No labels
+        0x00, 0x00, // No extra ram
+        0x10, 0x00, // Start at offset 16
+        0x14, 0x00, // Proc at offset 20
+        0x00, 0x00, // No exit hook
+    };
+
+    #define TA2_LENGTH 24
+    unsigned char TestApplication2[TA2_LENGTH] = {
         'B', 'R', 'O', 'S',
         0x01, 0x00, // ABI version
         0x00, 0x00, // No labels
@@ -188,6 +229,18 @@ void main(void) {
     TestApplication1[22] = (unsigned char)(testApp1ProcAddr >> 8);
     TestApplication1[23] = 0x60; // rts
 
+    // start()
+    TestApplication2[16] = 0x20;
+    TestApplication2[17] = (unsigned char)testApp2StartAddr;
+    TestApplication2[18] = (unsigned char)(testApp2StartAddr >> 8);
+    TestApplication2[19] = 0x60; // rts
+
+    // proc()
+    TestApplication2[20] = 0x20;
+    TestApplication2[21] = (unsigned char)testApp2ProcAddr;
+    TestApplication2[22] = (unsigned char)(testApp2ProcAddr >> 8);
+    TestApplication2[23] = 0x60; // rts
+
     initializeTable();
 
     g_pid = BROS_INVALID_PID;
@@ -197,11 +250,19 @@ void main(void) {
 
     allocateProcess((ApplicationHeader*)TestApplication1, TA1_LENGTH);
     for (testAppIdx = 0; testAppIdx < TA1_LENGTH; ++testAppIdx) {
-        unsigned int* target = WRAM_START + testAppIdx;
+        unsigned int* target = g_processTable.processes[0].location + testAppIdx;
         *(target) = TestApplication1[testAppIdx];
     }
 
     g_processTable.processes[0].state = PS_LOADED;
+
+    allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
+    for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
+        unsigned int* target = g_processTable.processes[1].location + testAppIdx;
+        *(target) = TestApplication2[testAppIdx];
+    }
+
+   // g_processTable.processes[1].state = PS_LOADED;
 
     // rendering is disabled at the startup, the palette is all black
 
@@ -213,7 +274,7 @@ void main(void) {
     // there is a way to update small number of nametable tiles while rendering
     // is enabled, using set_vram_update and an update list
 
-    put_str(NTADR_A(2, 2), "INIT TEXT");
+    put_str(NTADR_A(2, 2), "STARTED BROS");
 
     ppu_on_all(); // enable rendering
 

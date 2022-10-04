@@ -49,3 +49,6 @@ clean:
 %.nes: %.o crt0.o
 	$(LD) -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
 
+# Assumes VirtuaNES is in PATH
+run:
+	VirtuaNES bros.nes

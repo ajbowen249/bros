@@ -160,9 +160,9 @@ void testApp1Proc() {
 int testApp2Counter;
 
 void testApp2Start() {
-    testApp2Counter = 1000;
+    testApp2Counter = 1000 * 30;
     ppu_off();
-    put_str(NTADR_A(2, 8), "TEST APP 1 START");
+    put_str(NTADR_A(2, 8), "TEST APP 2 START");
     ppu_on_all();
     return;
 }
@@ -262,7 +262,7 @@ void main(void) {
         *(target) = TestApplication2[testAppIdx];
     }
 
-   // g_processTable.processes[1].state = PS_LOADED;
+   g_processTable.processes[1].state = PS_LOADED;
 
     // rendering is disabled at the startup, the palette is all black
 

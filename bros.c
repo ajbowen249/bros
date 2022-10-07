@@ -6,11 +6,15 @@
 // The actual process table
 ProcessTable g_processTable;
 
+// The ID of the process currently being called
+unsigned int g_pid;
+
 // The last system error
 SystemError g_systemError;
 
-// The ID of the process currently being called
-unsigned int g_pid;
+#pragma region Kernel Routines
+
+// TODO: These eventually need to be declared in a way where we know how to call them from apps
 
 void __fastcall__ setSystemError(SystemError err);
 void setSystemError(SystemError err) {
@@ -30,6 +34,16 @@ void put_str(unsigned int adr, const char* str) {
         vram_put((*str++) - 0x20); // -0x20 because ASCII code 0x20 is placed in tile 0 of the CHR
     }
 }
+
+void exitCurrentProcess() {
+    if (g_pid == BROS_INVALID_PID || g_pid > MAX_BROS_PROCESSES) {
+        setSystemError(SERR_INVALID_PID);
+    } else {
+        g_processTable.processes[g_pid].state = PS_AWAITING_EXIT;
+    }
+}
+
+#pragma endregion
 
 bool allocateProcess(const ApplicationHeader* header, unsigned int fileSize) {
     unsigned int offset = 0;
@@ -89,11 +103,10 @@ bool allocateProcess(const ApplicationHeader* header, unsigned int fileSize) {
 }
 
 void runApplications() {
-    static unsigned int pid;
     static Process* process;
 
-    for (pid = 0; pid < MAX_BROS_PROCESSES; ++pid) {
-        process = &g_processTable.processes[pid];
+    for (g_pid = 0; g_pid < MAX_BROS_PROCESSES; ++g_pid) {
+        process = &g_processTable.processes[g_pid];
 
         switch (process->state)
         {
@@ -120,6 +133,8 @@ void runApplications() {
             break;
         }
     }
+
+    g_pid = BROS_INVALID_PID;
 }
 
 void initializeTable() {
@@ -138,7 +153,6 @@ void testApp1Start() {
     ppu_off();
     put_str(NTADR_A(2, 5), "TEST APP 1 START");
     ppu_on_all();
-    return;
 }
 
 void testApp1Proc() {
@@ -147,6 +161,7 @@ void testApp1Proc() {
     for (i = 0; i < 20; --i) {
         outputLine[i] = 0;
     }
+
     if (testApp1Counter++ % 60 == 0) {
         ppu_off();
         itoa(testApp1Counter / 60, outputLine, 10);
@@ -154,33 +169,52 @@ void testApp1Proc() {
         put_str(NTADR_A(2, 6), outputLine);
         ppu_on_all();
     }
-    return;
+
+    if (testApp1Counter > 60 * 10) {
+        exitCurrentProcess();
+    }
+}
+
+void testApp1Exit() {
+    ppu_off();
+    put_str(NTADR_A(2, 7), "TEST APP 1 EXIT");
+    ppu_on_all();
 }
 
 int testApp2Counter;
 
 void testApp2Start() {
-    testApp2Counter = 1000 * 30;
+    testApp2Counter = 60 * 10;
     ppu_off();
-    put_str(NTADR_A(2, 8), "TEST APP 2 START");
+    put_str(NTADR_A(2, 9), "TEST APP 2 START");
     ppu_on_all();
-    return;
 }
 
 void testApp2Proc() {
     char outputLine[20];
     int i;
+
     for (i = 0; i < 20; ++i) {
         outputLine[i] = 0;
     }
+
     if (testApp2Counter-- % 60 == 0) {
         ppu_off();
         itoa(testApp2Counter / 60, outputLine, 10);
-        put_str(NTADR_A(2, 9), "    ");
-        put_str(NTADR_A(2, 9), outputLine);
+        put_str(NTADR_A(2, 10), "    ");
+        put_str(NTADR_A(2, 10), outputLine);
         ppu_on_all();
     }
-    return;
+
+    if (testApp2Counter == 0) {
+        exitCurrentProcess();
+    }
+}
+
+void testApp2Exit() {
+    ppu_off();
+    put_str(NTADR_A(2, 11), "TEST APP 2 EXIT");
+    ppu_on_all();
 }
 
 
@@ -189,13 +223,7 @@ unsigned char* g_workRam = WRAM_START;
 void main(void) {
     unsigned int testAppIdx;
 
-    unsigned int testApp1StartAddr = (unsigned int)testApp1Start;
-    unsigned int testApp1ProcAddr = (unsigned int)testApp1Proc;
-
-    unsigned int testApp2StartAddr = (unsigned int)testApp2Start;
-    unsigned int testApp2ProcAddr = (unsigned int)testApp2Proc;
-
-    #define TA1_LENGTH 24
+    #define TA1_LENGTH 28
     unsigned char TestApplication1[TA1_LENGTH] = {
         'B', 'R', 'O', 'S',
         0x01, 0x00, // ABI version
@@ -203,10 +231,10 @@ void main(void) {
         0x00, 0x00, // No extra ram
         0x10, 0x00, // Start at offset 16
         0x14, 0x00, // Proc at offset 20
-        0x00, 0x00, // No exit hook
+        0x18, 0x00, // exit at offset 24
     };
 
-    #define TA2_LENGTH 24
+    #define TA2_LENGTH 28
     unsigned char TestApplication2[TA2_LENGTH] = {
         'B', 'R', 'O', 'S',
         0x01, 0x00, // ABI version
@@ -214,32 +242,44 @@ void main(void) {
         0x00, 0x00, // No extra ram
         0x10, 0x00, // Start at offset 16
         0x14, 0x00, // Proc at offset 20
-        0x00, 0x00, // No exit hook
+        0x18, 0x00, // exit at offset 24
     };
 
-    // start()
+    // start() 1
     TestApplication1[16] = 0x20;
-    TestApplication1[17] = (unsigned char)testApp1StartAddr;
-    TestApplication1[18] = (unsigned char)(testApp1StartAddr >> 8);
+    TestApplication1[17] = (unsigned char)testApp1Start;
+    TestApplication1[18] = (unsigned char)((unsigned int)testApp1Start >> 8);
     TestApplication1[19] = 0x60; // rts
 
-    // proc()
+    // proc() 1
     TestApplication1[20] = 0x20;
-    TestApplication1[21] = (unsigned char)testApp1ProcAddr;
-    TestApplication1[22] = (unsigned char)(testApp1ProcAddr >> 8);
+    TestApplication1[21] = (unsigned char)testApp1Proc;
+    TestApplication1[22] = (unsigned char)((unsigned int)testApp1Proc >> 8);
     TestApplication1[23] = 0x60; // rts
 
-    // start()
+    // atExit() 1
+    TestApplication1[24] = 0x20;
+    TestApplication1[25] = (unsigned char)(unsigned int)testApp1Exit;
+    TestApplication1[26] = (unsigned char)((unsigned int)testApp1Exit >> 8);
+    TestApplication1[27] = 0x60; // rts
+
+    // start() 2
     TestApplication2[16] = 0x20;
-    TestApplication2[17] = (unsigned char)testApp2StartAddr;
-    TestApplication2[18] = (unsigned char)(testApp2StartAddr >> 8);
+    TestApplication2[17] = (unsigned char)testApp2Start;
+    TestApplication2[18] = (unsigned char)((unsigned int)testApp2Start >> 8);
     TestApplication2[19] = 0x60; // rts
 
-    // proc()
+    // proc() 2
     TestApplication2[20] = 0x20;
-    TestApplication2[21] = (unsigned char)testApp2ProcAddr;
-    TestApplication2[22] = (unsigned char)(testApp2ProcAddr >> 8);
+    TestApplication2[21] = (unsigned char)testApp2Proc;
+    TestApplication2[22] = (unsigned char)((unsigned int)testApp2Proc >> 8);
     TestApplication2[23] = 0x60; // rts
+
+    // atExit() 2
+    TestApplication2[24] = 0x20;
+    TestApplication2[25] = (unsigned char)(unsigned int)testApp2Exit;
+    TestApplication2[26] = (unsigned char)((unsigned int)testApp2Exit >> 8);
+    TestApplication2[27] = 0x60; // rts
 
     initializeTable();
 

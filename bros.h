@@ -20,13 +20,16 @@ typedef enum _SystemError {
     // NO error happened
     SERR_SUCCESS = 0,
 
+    // Kernel Routine Errors
+    SERR_INVALID_PID = 001,
+
     // Process Loading Errors
 
     // The application header didn't start with BROS
-    SERR_INVALID_APPLICATION_HEADER = 1,
+    SERR_INVALID_APPLICATION_HEADER = 100,
 
     // Could not find a continguous memory block big enough to run the application
-    SERR_NOT_ENOUGH_MEMORY = 2,
+    SERR_NOT_ENOUGH_MEMORY = 102,
 } SystemError;
 
 // The first bytes of any application file

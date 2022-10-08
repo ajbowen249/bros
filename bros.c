@@ -1,4 +1,5 @@
 #include "bros.h"
+#include "brosGUI.h"
 
 #include "neslib.h"
 #include <stdlib.h>
@@ -11,6 +12,9 @@ unsigned int g_pid;
 
 // The last system error
 SystemError g_systemError;
+
+
+// TODO: Redo build system. This file is HUGE!!!!
 
 #pragma region Kernel Routines
 
@@ -41,6 +45,165 @@ void exitCurrentProcess() {
     } else {
         g_processTable.processes[g_pid].state = PS_AWAITING_EXIT;
     }
+}
+
+#pragma endregion
+
+#pragma region GUI server implementations
+
+// Yeah, yeah, fix the build system and get these out of here...
+
+#define MAX_GUI_CONTROLS 50
+
+GUIControl* g_guiControls[MAX_GUI_CONTROLS];
+
+GUIError g_guiError;
+
+bool g_guiNeedsRefresh;
+
+void initGui() {
+    int i;
+    
+    for (i = 0; i < MAX_GUI_CONTROLS; ++i) {
+        g_guiControls[i] = nullptr;
+    }  
+
+    g_guiNeedsRefresh = 0;
+
+    g_guiError = GE_SUCCESS;
+}
+
+bool addLabel(GUIControl* label) {
+    unsigned int controlIndex;
+
+    if (g_pid == BROS_INVALID_PID) {
+        g_guiError = GE_NOT_CALLED_FROM_APP;
+        return 0;
+    }
+
+    for (controlIndex = 0; controlIndex < MAX_GUI_CONTROLS; ++controlIndex) {
+        if (!g_guiControls[controlIndex]) {
+            break;
+        }
+    }
+
+    if (controlIndex >= MAX_GUI_CONTROLS) {
+        g_guiError = GE_OUT_OF_MEMORY;
+        return 0;
+    }
+
+    label->label.pid = g_pid;
+    label->label.type = GCT_LABEL;
+    label->label.maxLength = 0;
+    label->label.value = nullptr;
+
+    g_guiNeedsRefresh  = 1;
+
+    return 1;
+}
+
+void invalidate() {
+    g_guiNeedsRefresh = 1;
+}
+
+#pragma endregion
+
+#pragma region GUI server "internals"
+
+void clearScreen() {
+    // IMPROVE: This is SLOW and dumb. Attempts at just writing the block have failed.
+    //          Must be a better way to do this.
+
+    unsigned int y;
+
+    for (y = 0; y < NAMETABLE_HEIGHT; ++y) {
+        put_str(NTADR_A(0, y), "                                ");
+    }
+}
+
+void drawLabel(GUIControl* label) {/*
+    unsigned char length = label->label.maxLength;
+    char* source = label->label.value;
+    unsigned int x = label->label.x;
+    unsigned int y = label->label.y;
+    unsigned char maxX = x + label->label.maxLength;
+    bool pastEnd = 0;
+    unsigned int index;
+
+    if (y > NAMETABLE_MAX_Y) {
+        return;
+    }
+
+    if (maxX > NAMETABLE_MAX_X) {
+        maxX = NAMETABLE_MAX_X;
+    }
+
+    if (x > maxX) {
+        return;
+    }
+*/
+    put_str(NTADR_A(label->label.x, label->label.y), label->label.value);
+    // put_str(NTADR_A(2, 5), "TEST");
+    return;/*
+
+    vram_adr(NTADR_A(x, y));
+
+    for (index = 0; index < length; ++index) {
+        char ch;
+        if (!pastEnd) {
+            ch = source[index];
+        } else {
+            ch = " ";
+        }
+
+        if (!ch) {
+            pastEnd = 1;
+            ch = " ";
+        }
+
+        vram_put(ch - 0x20);
+
+        ++x;
+        if (x > maxX) {
+            return;
+        }
+    }*/
+}
+
+void processGUI() {
+    unsigned int controlIndex;
+    GUIControl* control;
+
+
+    if (!g_guiNeedsRefresh) {
+        return;
+    }
+
+    ppu_off();
+    clearScreen();
+
+    put_str(NTADR_A(2, 5), "TEST");
+    ppu_on_all();
+    g_guiNeedsRefresh = 0;
+    return;
+
+    for (controlIndex = 0; controlIndex < MAX_GUI_CONTROLS; ++controlIndex) {
+        control = g_guiControls[controlIndex];
+        if (control) {
+            switch (control->nothing.type)
+            {
+            case GCT_LABEL:
+                drawLabel(control);
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    g_guiNeedsRefresh = 0;
+
+    ppu_on_all();
 }
 
 #pragma endregion
@@ -146,39 +309,47 @@ void initializeTable() {
     }
 }
 
-int testApp1Counter;
+// int testApp1Counter;
+
+GUIControl testApp1TitleLabel;
+const char* testApp1Title = "TEST APP 1";
 
 void testApp1Start() {
-    testApp1Counter = 0;
-    ppu_off();
-    put_str(NTADR_A(2, 5), "TEST APP 1 START");
-    ppu_on_all();
+    // testApp1Counter = 0;
+    // ppu_off();
+    // put_str(NTADR_A(2, 5), "TEST APP 1 START");
+    // ppu_on_all();
+    addLabel(&testApp1TitleLabel);
+    testApp1TitleLabel.label.maxLength = 10;
+    testApp1TitleLabel.label.value = testApp1Title;
+    testApp1TitleLabel.label.x = 2;
+    testApp1TitleLabel.label.y = 5;
 }
 
 void testApp1Proc() {
-    char outputLine[20];
-    int i;
-    for (i = 0; i < 20; --i) {
-        outputLine[i] = 0;
-    }
+    // char outputLine[20];
+    // int i;
+    // for (i = 0; i < 20; --i) {
+    //     outputLine[i] = 0;
+    // }
 
-    if (testApp1Counter++ % 60 == 0) {
-        ppu_off();
-        itoa(testApp1Counter / 60, outputLine, 10);
-        put_str(NTADR_A(2, 6), "    ");
-        put_str(NTADR_A(2, 6), outputLine);
-        ppu_on_all();
-    }
+    // if (testApp1Counter++ % 60 == 0) {
+    //     ppu_off();
+    //     itoa(testApp1Counter / 60, outputLine, 10);
+    //     put_str(NTADR_A(2, 6), "    ");
+    //     put_str(NTADR_A(2, 6), outputLine);
+    //     ppu_on_all();
+    // }
 
-    if (testApp1Counter > 60 * 10) {
-        exitCurrentProcess();
-    }
+    // if (testApp1Counter > 60 * 10) {
+    //     exitCurrentProcess();
+    // }
 }
 
 void testApp1Exit() {
-    ppu_off();
-    put_str(NTADR_A(2, 7), "TEST APP 1 EXIT");
-    ppu_on_all();
+    // ppu_off();
+    // put_str(NTADR_A(2, 7), "TEST APP 1 EXIT");
+    // ppu_on_all();
 }
 
 int testApp2Counter;
@@ -222,6 +393,7 @@ unsigned char* g_workRam = WRAM_START;
 
 void main(void) {
     unsigned int testAppIdx;
+    unsigned int frameCounter;
 
     #define TA1_LENGTH 28
     unsigned char TestApplication1[TA1_LENGTH] = {
@@ -283,6 +455,8 @@ void main(void) {
 
     initializeTable();
 
+    initGui();
+
     g_pid = BROS_INVALID_PID;
     setSystemError(SERR_SUCCESS);
     pal_col(1, 0x30); // set while color
@@ -296,13 +470,13 @@ void main(void) {
 
     g_processTable.processes[0].state = PS_LOADED;
 
-    allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
-    for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
-        unsigned int* target = g_processTable.processes[1].location + testAppIdx;
-        *(target) = TestApplication2[testAppIdx];
-    }
+    // allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
+    // for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
+        // unsigned int* target = g_processTable.processes[1].location + testAppIdx;
+        // *(target) = TestApplication2[testAppIdx];
+    // }
 
-   g_processTable.processes[1].state = PS_LOADED;
+   // g_processTable.processes[1].state = PS_LOADED;
 
     // rendering is disabled at the startup, the palette is all black
 
@@ -318,8 +492,15 @@ void main(void) {
 
     ppu_on_all(); // enable rendering
 
+    frameCounter = 0;
+
     while(1) {
         ppu_wait_nmi();
+        ++frameCounter;
         runApplications();
+
+        if (frameCounter % 30 == 0) {
+            processGUI();
+        }
     }
 }

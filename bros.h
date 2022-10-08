@@ -13,7 +13,15 @@
 // shorthand for people used to using bool
 #define bool unsigned char
 
+#define nullptr 0
+
 #define WRAM_START 0x6000
+
+#define NAMETABLE_WIDTH 32
+#define NAMETABLE_HEIGHT 30
+
+#define NAMETABLE_MAX_X 31
+#define NAMETABLE_MAX_Y 29
 
 // Errors that happen at the system level
 typedef enum _SystemError {

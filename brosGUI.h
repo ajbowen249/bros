@@ -14,9 +14,6 @@
 //       for allocating space for controls in their own memory, but there is still a fixed overall number of controls
 //       the GUI server can keep track of in its registry.
 
-// IMPROVE: Is there a way I could do some sort of inheritance here and guarantee the base properties of a control at
-//          compile time?
-
 typedef enum _GUIControlType {
     GCT_NOTHING = 0,
     GCT_LABEL = 1,
@@ -26,16 +23,13 @@ typedef enum _GUIControlType {
  * Literally nothing. Here to prove the union approach works.
  */
 typedef struct _GUINothing {
-    GUIControlType type;
-    unsigned int pid;
+    int dummy;
 } GUINothing;
 
 /**
  * A single-line limited-length string of text on the screen
  */
 typedef struct _GUILabel {
-    GUIControlType type;
-    unsigned int pid;
     unsigned char maxLength;
     char* value;
     unsigned int x;
@@ -43,11 +37,21 @@ typedef struct _GUILabel {
 } GUILabel;
 
 /**
- * The core GUI object type for the registry
+ * The union of all possible controls
  */
-typedef union _GUIControl {
+typedef union _GUIControlUnion {
     GUINothing nothing;
     GUILabel label;
+} GUIControlUnion;
+
+/**
+ * The core GUI object type for the registry
+ */
+typedef struct _GUIControl {
+    GUIControlType type;
+    unsigned int pid;
+    bool isVisible;
+    GUIControlUnion control;
 } GUIControl;
 
 /**

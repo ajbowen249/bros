@@ -92,12 +92,15 @@ bool addLabel(GUIControl* label) {
         return 0;
     }
 
-    label->label.pid = g_pid;
-    label->label.type = GCT_LABEL;
-    label->label.maxLength = 0;
-    label->label.value = nullptr;
+    label->pid = g_pid;
+    label->type = GCT_LABEL;
+    label->isVisible = 1;
+    label->control.label.maxLength = 0;
+    label->control.label.value = nullptr;
 
-    g_guiNeedsRefresh  = 1;
+    g_guiControls[controlIndex] = label;
+
+    g_guiNeedsRefresh = 1;
 
     return 1;
 }
@@ -121,59 +124,57 @@ void clearScreen() {
     }
 }
 
-void drawLabel(GUIControl* label) {/*
-    unsigned char length = label->label.maxLength;
-    char* source = label->label.value;
-    unsigned int x = label->label.x;
-    unsigned int y = label->label.y;
-    unsigned char maxX = x + label->label.maxLength;
-    bool pastEnd = 0;
-    unsigned int index;
+void drawLabel(GUIControl* label) {
+    // unsigned char length = label->control.label.maxLength;
+    // char* source = label->control.label.value;
+    // unsigned int x = label->control.label.x;
+    // unsigned int y = label->control.label.y;
+    // unsigned char maxX = x + label->control.label.maxLength;
+    // bool pastEnd = 0;
+    // unsigned int index;
 
-    if (y > NAMETABLE_MAX_Y) {
-        return;
-    }
+    // if (y > NAMETABLE_MAX_Y) {
+    //     return;
+    // }
 
-    if (maxX > NAMETABLE_MAX_X) {
-        maxX = NAMETABLE_MAX_X;
-    }
+    // if (maxX > NAMETABLE_MAX_X) {
+    //     maxX = NAMETABLE_MAX_X;
+    // }
 
-    if (x > maxX) {
-        return;
-    }
-*/
-    put_str(NTADR_A(label->label.x, label->label.y), label->label.value);
-    // put_str(NTADR_A(2, 5), "TEST");
-    return;/*
+    // if (x > maxX) {
+    //     return;
+    // }
 
-    vram_adr(NTADR_A(x, y));
+    put_str(NTADR_A(label->control.label.x, label->control.label.y), label->control.label.value);
+   return;
 
-    for (index = 0; index < length; ++index) {
-        char ch;
-        if (!pastEnd) {
-            ch = source[index];
-        } else {
-            ch = " ";
-        }
+    // vram_adr(NTADR_A(x, y));
 
-        if (!ch) {
-            pastEnd = 1;
-            ch = " ";
-        }
+    // for (index = 0; index < length; ++index) {
+    //     char ch;
+    //     if (!pastEnd) {
+    //         ch = source[index];
+    //     } else {
+    //         ch = " ";
+    //     }
 
-        vram_put(ch - 0x20);
+    //     if (!ch) {
+    //         pastEnd = 1;
+    //         ch = " ";
+    //     }
 
-        ++x;
-        if (x > maxX) {
-            return;
-        }
-    }*/
+    //     vram_put(ch - 0x20);
+
+    //     ++x;
+    //     if (x > maxX) {
+    //         return;
+    //     }
+    // }
 }
 
 void processGUI() {
     unsigned int controlIndex;
     GUIControl* control;
-
 
     if (!g_guiNeedsRefresh) {
         return;
@@ -182,15 +183,10 @@ void processGUI() {
     ppu_off();
     clearScreen();
 
-    put_str(NTADR_A(2, 5), "TEST");
-    ppu_on_all();
-    g_guiNeedsRefresh = 0;
-    return;
-
     for (controlIndex = 0; controlIndex < MAX_GUI_CONTROLS; ++controlIndex) {
         control = g_guiControls[controlIndex];
-        if (control) {
-            switch (control->nothing.type)
+        if (control && control->isVisible) {
+            switch (control->type)
             {
             case GCT_LABEL:
                 drawLabel(control);
@@ -309,85 +305,111 @@ void initializeTable() {
     }
 }
 
-// int testApp1Counter;
+int testApp1Counter;
 
 GUIControl testApp1TitleLabel;
 const char* testApp1Title = "TEST APP 1";
 
+GUIControl testApp1CounterLabel;
+char testApp1CounterText[5] = "    ";
+
+GUIControl testApp1ExitLabel;
+const char* testApp1ExitText = "TEST APP 1 EXIT";
+
 void testApp1Start() {
-    // testApp1Counter = 0;
-    // ppu_off();
-    // put_str(NTADR_A(2, 5), "TEST APP 1 START");
-    // ppu_on_all();
+    testApp1Counter = 0;
     addLabel(&testApp1TitleLabel);
-    testApp1TitleLabel.label.maxLength = 10;
-    testApp1TitleLabel.label.value = testApp1Title;
-    testApp1TitleLabel.label.x = 2;
-    testApp1TitleLabel.label.y = 5;
+    testApp1TitleLabel.control.label.maxLength = 10;
+    testApp1TitleLabel.control.label.value = testApp1Title;
+    testApp1TitleLabel.control.label.x = 2;
+    testApp1TitleLabel.control.label.y = 5;
+
+    addLabel(&testApp1CounterLabel);
+    testApp1CounterLabel.control.label.maxLength = 4;
+    testApp1CounterLabel.control.label.value = testApp1CounterText;
+    testApp1CounterLabel.control.label.x = 2;
+    testApp1CounterLabel.control.label.y = 6;
+
+    addLabel(&testApp1ExitLabel);
+    testApp1ExitLabel.control.label.maxLength = 15;
+    testApp1ExitLabel.control.label.value = testApp1ExitText;
+    testApp1ExitLabel.control.label.x = 2;
+    testApp1ExitLabel.control.label.y = 7;
+    testApp1ExitLabel.isVisible = 0;
 }
 
 void testApp1Proc() {
-    // char outputLine[20];
-    // int i;
-    // for (i = 0; i < 20; --i) {
-    //     outputLine[i] = 0;
-    // }
+    if (testApp1Counter++ % 60 == 0) {
+        testApp1CounterText[0] = ' ';
+        testApp1CounterText[1] = ' ';
+        testApp1CounterText[2] = ' ';
+        testApp1CounterText[3] = ' ';
+        itoa(testApp1Counter / 60, testApp1CounterText, 10);
+        // TODO: No way this should be the right way...
+        g_guiNeedsRefresh = 1;
+    }
 
-    // if (testApp1Counter++ % 60 == 0) {
-    //     ppu_off();
-    //     itoa(testApp1Counter / 60, outputLine, 10);
-    //     put_str(NTADR_A(2, 6), "    ");
-    //     put_str(NTADR_A(2, 6), outputLine);
-    //     ppu_on_all();
-    // }
-
-    // if (testApp1Counter > 60 * 10) {
-    //     exitCurrentProcess();
-    // }
+    if (testApp1Counter > 60 * 10) {
+        exitCurrentProcess();
+    }
 }
 
 void testApp1Exit() {
-    // ppu_off();
-    // put_str(NTADR_A(2, 7), "TEST APP 1 EXIT");
-    // ppu_on_all();
+    testApp1ExitLabel.isVisible = 1;
 }
 
 int testApp2Counter;
 
+GUIControl testApp2TitleLabel;
+const char* testApp2Title = "TEST APP 2";
+
+GUIControl testApp2CounterLabel;
+char testApp2CounterText[5] = "    ";
+
+GUIControl testApp2ExitLabel;
+const char* testApp2ExitText = "TEST APP 2 EXIT";
+
 void testApp2Start() {
-    testApp2Counter = 60 * 10;
-    ppu_off();
-    put_str(NTADR_A(2, 9), "TEST APP 2 START");
-    ppu_on_all();
+    testApp2Counter = 10 * 60;
+    addLabel(&testApp2TitleLabel);
+    testApp2TitleLabel.control.label.maxLength = 10;
+    testApp2TitleLabel.control.label.value = testApp2Title;
+    testApp2TitleLabel.control.label.x = 2;
+    testApp2TitleLabel.control.label.y = 10;
+
+    addLabel(&testApp2CounterLabel);
+    testApp2CounterLabel.control.label.maxLength = 4;
+    testApp2CounterLabel.control.label.value = testApp2CounterText;
+    testApp2CounterLabel.control.label.x = 2;
+    testApp2CounterLabel.control.label.y = 11;
+
+    addLabel(&testApp2ExitLabel);
+    testApp2ExitLabel.control.label.maxLength = 15;
+    testApp2ExitLabel.control.label.value = testApp2ExitText;
+    testApp2ExitLabel.control.label.x = 2;
+    testApp2ExitLabel.control.label.y = 12;
+    testApp2ExitLabel.isVisible = 0;
 }
 
 void testApp2Proc() {
-    char outputLine[20];
-    int i;
-
-    for (i = 0; i < 20; ++i) {
-        outputLine[i] = 0;
-    }
-
     if (testApp2Counter-- % 60 == 0) {
-        ppu_off();
-        itoa(testApp2Counter / 60, outputLine, 10);
-        put_str(NTADR_A(2, 10), "    ");
-        put_str(NTADR_A(2, 10), outputLine);
-        ppu_on_all();
+        testApp2CounterText[0] = ' ';
+        testApp2CounterText[1] = ' ';
+        testApp2CounterText[2] = ' ';
+        testApp2CounterText[3] = ' ';
+        itoa(testApp2Counter / 60, testApp2CounterText, 10);
+        // TODO: No way this should be the right way...
+        g_guiNeedsRefresh = 1;
     }
 
-    if (testApp2Counter == 0) {
+    if (testApp2Counter <= 0) {
         exitCurrentProcess();
     }
 }
 
 void testApp2Exit() {
-    ppu_off();
-    put_str(NTADR_A(2, 11), "TEST APP 2 EXIT");
-    ppu_on_all();
+    testApp2ExitLabel.isVisible = 1;
 }
-
 
 unsigned char* g_workRam = WRAM_START;
 
@@ -470,13 +492,13 @@ void main(void) {
 
     g_processTable.processes[0].state = PS_LOADED;
 
-    // allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
-    // for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
-        // unsigned int* target = g_processTable.processes[1].location + testAppIdx;
-        // *(target) = TestApplication2[testAppIdx];
-    // }
+    allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
+    for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
+        unsigned int* target = g_processTable.processes[1].location + testAppIdx;
+        *(target) = TestApplication2[testAppIdx];
+    }
 
-   // g_processTable.processes[1].state = PS_LOADED;
+    g_processTable.processes[1].state = PS_LOADED;
 
     // rendering is disabled at the startup, the palette is all black
 

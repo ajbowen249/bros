@@ -6,6 +6,9 @@ CC := $(CC65_DIR)/bin/cc65
 CA := $(CC65_DIR)/bin/ca65
 LD := $(CC65_DIR)/bin/ld65
 
+CC_ANNOTATE := python ./annotateld65/annotatecc65.py
+LD_ANNOTATE := python ./annotateld65/annotateld65.py
+
 TARGET_PLATFORM := nes
 
 TARGETS := bros.nes
@@ -39,15 +42,20 @@ clean:
 	@rm -fv $(OBJECTS)
 	@rm -fv $(ASSEMBLY_SOURCES)
 	@rm -fv crt0.o
+	@rm -fv .annotate.*
+	@rm -fv *.nl
+	@rm -fv debugSymbols
 
 %.s: %.c
-	$(CC) -Oi $< --target $(TARGET_PLATFORM) -I$(CC65_DIR)/include/ --add-source
+	$(CC) -o .annotate.bros.s -Oi $< --target $(TARGET_PLATFORM) -I$(CC65_DIR)/include/ --add-source
+	$(CC_ANNOTATE)
 
 %.o: %.s
 	$(CA) $<
 
 %.nes: %.o crt0.o
-	$(LD) -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
+	$(LD) -Ln debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
+	$(LD_ANNOTATE) -Ln debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
 
 # Assumes fceux is in PATH
 run:

@@ -1,3 +1,6 @@
 *.o
 *.nes
 bros*.s
+.annotate.*
+debugSymbols
+*.nl

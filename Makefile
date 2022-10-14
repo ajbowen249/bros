@@ -41,7 +41,8 @@ all: $(TARGET)
 
 $(ASM_ODIR)/%.s: $(SRC_DIR)/%.c
 	@mkdir -p $(BUILD_DIR)
-	$(CC) -o ./$@ -Oi $< --target $(TARGET_PLATFORM) -I$(CC65_DIR)/include/ -I$(INC_DIR) --add-source
+	$(CC) -o ./$(patsubst %.s,%.annotate.s,$@) -Oi $< --target $(TARGET_PLATFORM) -I$(CC65_DIR)/include/ -I$(INC_DIR) --add-source
+	$(CC_ANNOTATE) ./$@ 
 
 $(OBJ_ODIR)/%.o: $(ASM_ODIR)/%.s
 	@mkdir -p $(BUILD_DIR)
@@ -54,6 +55,7 @@ $(OBJ_ODIR)/%.o: $(SRC_DIR)/%.s
 $(BUILD_DIR)/%.nes: $(C_OBJECT_FILES) $(ASM_OBJECT_FILES)
 	@mkdir -p $(BUILD_DIR)
 	$(LD) -Ln $(BUILD_DIR)/debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
+	$(LD_ANNOTATE) -Ln $(BUILD_DIR)/debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
 
 clean:
 	@rm -rfv $(BUILD_DIR)

@@ -3,6 +3,7 @@
 
 import os
 import re
+import sys
 
 def read_file(name):
   fp = open(name, 'r')
@@ -42,11 +43,12 @@ def annotate_intermediary(source_basename, content, fout, fmap):
       n += 1
 
 def process():
-  output_file = './bros.s'
+  args = sys.argv[1:]
+  output_file = args[0]
   final_dir = os.path.dirname(output_file)
   final_name = os.path.basename(output_file)
   final_base, final_ext = os.path.splitext(final_name)
-  inter_file = os.path.join(final_dir, '.annotate.' + final_base + '.s')
+  inter_file = os.path.join(final_dir, final_base + '.annotate.s')
   outmap_file = os.path.join(final_dir, '.annotate.' + final_base + '.map')
   fout = open(output_file, 'w')
   fmap = open(outmap_file, 'w')

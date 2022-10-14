@@ -60,5 +60,5 @@ $(BUILD_DIR)/%.nes: $(C_OBJECT_FILES) $(ASM_OBJECT_FILES)
 clean:
 	@rm -rfv $(BUILD_DIR)
 
-run:
-	$(EMULATOR) $(TARGET)
+run: $(TARGET)
+	$(EMULATOR) $<

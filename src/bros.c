@@ -1,4 +1,5 @@
 #include "bros.h"
+#include "bros2.h"
 #include "brosGUI.h"
 
 #include "neslib.h"
@@ -101,6 +102,8 @@ bool addLabel(GUIControl* label) {
     g_guiControls[controlIndex] = label;
 
     g_guiNeedsRefresh = 1;
+
+    test1();
 
     return 1;
 }

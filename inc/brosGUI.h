@@ -1,5 +1,7 @@
-#ifndef __BROS_GUI_H__
-#define __BROS_GUI_H__
+#ifndef BROS_GUI_H
+#define BROS_GUI_H
+
+#include "bros.h"
 
 // This is a good candidate for a "system app." It will inevitably outgrow the kernel, and is definitely something I'll
 // want to make updateable.
@@ -64,6 +66,12 @@ bool addLabel(GUIControl* label);
 */
 void invalidate();
 
+void initGui();
+
+void processGUI();
+
+void guiNeedsRefresh();
+
 typedef enum _GUIError {
     GE_SUCCESS = 0,
 
@@ -71,5 +79,6 @@ typedef enum _GUIError {
     GE_NOT_CALLED_FROM_APP = 2,
 } GUIError;
 
+#define MAX_GUI_CONTROLS 50
 
 #endif

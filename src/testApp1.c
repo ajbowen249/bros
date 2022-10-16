@@ -3,6 +3,8 @@
 #include "brosKernel.h"
 #include <stdlib.h>
 
+#include "brosFS.h"
+
 int testApp1Counter;
 
 GUIControl testApp1TitleLabel;
@@ -10,7 +12,7 @@ GUIControl testApp1CounterLabel;
 GUIControl testApp1ExitLabel;
 
 const char* testApp1Title = "TEST APP 1";
-char testApp1CounterText[5] = "    ";
+char testApp1CounterText[10] = "         ";
 const char* testApp1ExitText = "TEST APP 1 EXIT";
 
 void testApp1Start() {
@@ -36,18 +38,11 @@ void testApp1Start() {
 }
 
 void testApp1Proc() {
-    if (testApp1Counter++ % 60 == 0) {
-        testApp1CounterText[0] = ' ';
-        testApp1CounterText[1] = ' ';
-        testApp1CounterText[2] = ' ';
-        testApp1CounterText[3] = ' ';
-        itoa(testApp1Counter / 60, testApp1CounterText, 10);
-        // TODO: No way this should be the right way...
-        guiNeedsRefresh();
-    }
-
-    if (testApp1Counter > 60 * 10) {
+    if (testApp1Counter > 0) {
         exitCurrentProcess();
+    } else {
+        itoa(BFS_MAX_BLOCKS, testApp1CounterText, 10);
+        guiNeedsRefresh();
     }
 }
 

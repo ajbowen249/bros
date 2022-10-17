@@ -7,6 +7,7 @@ export const BFSEntrySize = 20;
 export const BFSMaxEntries = 50;
 export const BFSBlockDataSize = 12;
 export const BFSBlockHeaderSize = 4;
+export const BFSNoFolder = 255;
 export const BFSBlockRecordSize = BFSBlockDataSize + BFSBlockHeaderSize;
 
 export const BFSAvailableSpace = BFSDefaultDiskVolumeSize - BFSHeaderSize - (BFSMaxEntries * BFSEntrySize);

@@ -1,6 +1,6 @@
 export const BFSVersion = 1;
 export const BFSNameMaxLength = 12;
-export const BFSNameExtensionLength = 4;
+export const BFSMaxExtensionLength = 4;
 export const BFSDefaultDiskVolumeSize = 4096;
 export const BFSHeaderSize = 8;
 export const BFSEntrySize = 20;
@@ -62,7 +62,7 @@ export class FSName {
     }
 
     private validateLength(str: string, isName: boolean = true) {
-        const limit = isName ? BFSNameMaxLength : BFSNameExtensionLength;
+        const limit = isName ? BFSNameMaxLength : BFSMaxExtensionLength;
         if (str.length > limit) {
             throw new (isName ? FileNameTooLongError : FileExtensionTooLongError)(str);
         }

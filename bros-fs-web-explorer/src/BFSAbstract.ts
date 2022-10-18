@@ -1,17 +1,18 @@
-export const BFSVersion = 1;
-export const BFSNameMaxLength = 12;
-export const BFSMaxExtensionLength = 4;
-export const BFSDefaultDiskVolumeSize = 4096;
-export const BFSHeaderSize = 8;
-export const BFSEntrySize = 20;
-export const BFSMaxEntries = 50;
-export const BFSBlockDataSize = 12;
-export const BFSBlockHeaderSize = 4;
-export const BFSNoFolder = 255;
-export const BFSBlockRecordSize = BFSBlockDataSize + BFSBlockHeaderSize;
+export const Version = 1;
+export const NameMaxLength = 12;
+export const MaxExtensionLength = 4;
+export const DefaultDiskVolumeSize = 4096;
+export const HeaderSize = 8;
+export const EntrySize = 20;
+export const MaxEntries = 50;
+export const BlockDataSize = 12;
+export const BlockHeaderSize = 4;
+export const NoFolder = 255;
+export const BlockRecordSize = BlockDataSize + BlockHeaderSize;
 
-export const BFSAvailableSpace = BFSDefaultDiskVolumeSize - BFSHeaderSize - (BFSMaxEntries * BFSEntrySize);
-export const BFSMaxBlocks = BFSAvailableSpace / BFSBlockRecordSize;
+const availableBlockSpace = DefaultDiskVolumeSize - HeaderSize - (MaxEntries * EntrySize);
+export const MaxBlocks = availableBlockSpace / BlockRecordSize;
+export const VolumeDataCapacity = MaxBlocks * BlockDataSize;
 
 export class FileNameTooLongError extends Error {
     public readonly offendingName: string;
@@ -35,7 +36,13 @@ export class FileSystemFullError extends Error {
     }
 }
 
-export class FSName {
+export class FileSystemOutOfSpaceError extends Error {
+    constructor() {
+        super('Out of disk space');
+    }
+}
+
+export class Name {
     private _name: string;
     private _extension: string;
 
@@ -63,28 +70,28 @@ export class FSName {
     }
 
     private validateLength(str: string, isName: boolean = true) {
-        const limit = isName ? BFSNameMaxLength : BFSMaxExtensionLength;
+        const limit = isName ? NameMaxLength : MaxExtensionLength;
         if (str.length > limit) {
             throw new (isName ? FileNameTooLongError : FileExtensionTooLongError)(str);
         }
     }
 }
 
-export enum FSEntryType {
+export enum EntryType {
     None = 0,
     Folder = 1,
     File = 2,
 }
 
-export class FSEntry {
-    entryType: FSEntryType;
-    parentFolder: FSFolderEntry | null;
-    name: FSName;
+export class Entry {
+    entryType: EntryType;
+    parentFolder: FolderEntry | null;
+    name: Name;
 
     constructor(
-        entryType: FSEntryType = FSEntryType.None,
-        name: FSName = new FSName('', ''),
-        parentFolder?: FSFolderEntry,
+        entryType: EntryType = EntryType.None,
+        name: Name = new Name('', ''),
+        parentFolder?: FolderEntry,
     ) {
         this.entryType = entryType;
         this.name = name;
@@ -92,38 +99,38 @@ export class FSEntry {
     }
 }
 
-export class FSFolderEntry extends FSEntry {
+export class FolderEntry extends Entry {
     placeholder: number;
-    constructor(name: FSName, parentFolder?: FSFolderEntry) {
-        super(FSEntryType.Folder, name, parentFolder);
+    constructor(name: Name, parentFolder?: FolderEntry) {
+        super(EntryType.Folder, name, parentFolder);
         this.placeholder = 0;
     }
 }
 
-export class FSFileEntry extends FSEntry {
-    data: Uint8ClampedArray;
-    constructor(name: FSName, parentFolder?: FSFolderEntry, data?: Uint8ClampedArray) {
-        super(FSEntryType.File, name, parentFolder);
-        this.data = data ?? new Uint8ClampedArray([]);
+export class FileEntry extends Entry {
+    data: Uint8Array;
+    constructor(name: Name, parentFolder?: FolderEntry, data?: Uint8Array) {
+        super(EntryType.File, name, parentFolder);
+        this.data = data ?? new Uint8Array([]);
     }
 }
 
 export class FileSystem {
-    private table: FSEntry[];
+    private table: Entry[];
 
     constructor() {
         this.table = [];
     }
 
-    addEntry(entry: FSEntry) {
-        if (this.table.length >= BFSMaxEntries) {
+    addEntry(entry: Entry) {
+        if (this.table.length >= MaxEntries) {
             throw new FileSystemFullError();
         }
 
         this.table.push(entry);
     }
 
-    getTable(): FSEntry[] {
+    getTable(): Entry[] {
         return this.table;
     }
 }
@@ -131,13 +138,13 @@ export class FileSystem {
 export function createTestFileSystem(): FileSystem {
     const fs = new FileSystem();
 
-    const sysFolder = new FSFolderEntry(new FSName('SYS', ''));
-    const emptySysFile = new FSFileEntry(new FSName('EMPTYSYS', 'TXT'), sysFolder);
-    const userFolder = new FSFolderEntry(new FSName('USR', ''));
-    const docsFolder = new FSFolderEntry(new FSName('DOCUMENTS', ''), userFolder);
-    const emptyDocFile = new FSFileEntry(new FSName('EMPTYDOC', 'TXT'), docsFolder);
-    const configFolder = new FSFolderEntry(new FSName('CONFIG', ''), userFolder);
-    const emptyRootFile = new FSFileEntry(new FSName('EMPTYROOT', 'TXT'));
+    const sysFolder = new FolderEntry(new Name('SYS', ''));
+    const emptySysFile = new FileEntry(new Name('EMPTYSYS', 'TXT'), sysFolder);
+    const userFolder = new FolderEntry(new Name('USR', ''));
+    const docsFolder = new FolderEntry(new Name('DOCUMENTS', ''), userFolder);
+    const emptyDocFile = new FileEntry(new Name('EMPTYDOC', 'TXT'), docsFolder);
+    const configFolder = new FolderEntry(new Name('CONFIG', ''), userFolder);
+    const emptyRootFile = new FileEntry(new Name('EMPTYROOT', 'TXT'));
 
     fs.addEntry(sysFolder);
     fs.addEntry(emptySysFile);

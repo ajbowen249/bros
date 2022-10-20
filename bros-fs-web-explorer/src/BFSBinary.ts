@@ -26,9 +26,6 @@ export function ToBinary(fileSystem: bfs.FileSystem) {
     binary.setUint8(3, bfs.Version);
     binary.setUint32(4, bfs.DefaultDiskVolumeSize, true);
 
-    // Save ofets of each file record's block offset field so we can populate it later when building the table
-    const blockAddressOffsets: Record<string, number> = {};
-
     for (let entryI = 0; entryI < bfs.MaxEntries; entryI++) {
         const entry = fileSystem.getTable()[entryI] ?? new bfs.Entry();
         const entryOffset = (entryI * bfs.EntrySize) + bfs.HeaderSize;
@@ -50,7 +47,6 @@ export function ToBinary(fileSystem: bfs.FileSystem) {
         switch(entry.entryType) {
             case bfs.EntryType.File:
                 // We'll come back and populate this later
-                blockAddressOffsets[`${entryI}`] = entryOffset + 18;
                 binary.setUint16(entryOffset + 18, BlockAddressNone, true);
                 break;
             default:
@@ -73,8 +69,9 @@ export function ToBinary(fileSystem: bfs.FileSystem) {
         if (file.data.length === 0) {
             continue;
         }
-        const offset = blockAddressOffsets[`${entryI}`];
-        binary.setUint16(blockAddressOffsets[`${entryI}`], blockIndex, true);
+
+        const entryOffset = (entryI * bfs.EntrySize) + bfs.HeaderSize;
+        binary.setUint16(entryOffset + 18, blockIndex, true);
 
         const fileBlocks = Math.ceil(file.data.length / bfs.BlockDataSize);
         if ((bfs.MaxBlocks - blockIndex) < fileBlocks) {

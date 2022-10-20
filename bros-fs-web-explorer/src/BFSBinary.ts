@@ -1,48 +1,38 @@
 import * as bfs from './BFSAbstract';
 
-const BlockAddressNone = new Uint8Array(new Uint16Array([0xffff]).buffer);
-
-function uint32ToBytes(num: number) {
-    const bytes = new Uint32Array(num);
-    return new Uint8Array(bytes);
-}
+const BlockAddressNone = 0xffff;
 
 function nameToBytes(name: bfs.Name) {
-    const bytes = new Uint8Array(bfs.NameMaxLength + bfs.MaxExtensionLength);
+    const bytes = new DataView(new ArrayBuffer(bfs.NameMaxLength + bfs.MaxExtensionLength));
     for (let i = 0; i < bfs.NameMaxLength; i++) {
         const char = i < name.name.length ? name.name.charCodeAt(i) : 0;
-        bytes[i] = char;
+        bytes.setUint8(i, char);
     }
 
     for (let i = 0; i < bfs.MaxExtensionLength; i++) {
         const char = i < name.extension.length ? name.extension.charCodeAt(i) : 0;
-        bytes[bfs.NameMaxLength + i] = char;
+        bytes.setUint8(bfs.NameMaxLength + i, char);
     }
 
     return bytes;
 }
 
 export function ToBinary(fileSystem: bfs.FileSystem) {
-    const binary = new Uint8Array(bfs.DefaultDiskVolumeSize);
+    const binary = new DataView(new ArrayBuffer(bfs.DefaultDiskVolumeSize));
     const headerString = 'BFS';
-    binary[0] = headerString.charCodeAt(0);
-    binary[1] = headerString.charCodeAt(1);
-    binary[2] = headerString.charCodeAt(2);
-    binary[3] = bfs.Version;
-
-    const volumeBytes = uint32ToBytes(bfs.DefaultDiskVolumeSize);
-    binary[4] = volumeBytes[0];
-    binary[5] = volumeBytes[1];
-    binary[6] = volumeBytes[2];
-    binary[7] = volumeBytes[3];
+    binary.setUint8(0, headerString.charCodeAt(0));
+    binary.setUint8(1, headerString.charCodeAt(1));
+    binary.setUint8(2, headerString.charCodeAt(2));
+    binary.setUint8(3, bfs.Version);
+    binary.setUint32(4, bfs.DefaultDiskVolumeSize, true);
 
     // Save ofets of each file record's block offset field so we can populate it later when building the table
-    const BlockAddressOfets: Record<number, number> = {};
+    const blockAddressOffsets: Record<string, number> = {};
 
     for (let entryI = 0; entryI < bfs.MaxEntries; entryI++) {
         const entry = fileSystem.getTable()[entryI] ?? new bfs.Entry();
-        const entryOfet = (entryI * bfs.EntrySize) + 8;
-        binary[entryOfet] = entry.entryType;
+        const entryOffset = (entryI * bfs.EntrySize) + bfs.HeaderSize;
+        binary.setUint8(entryOffset, entry.entryType);
         let folderIndex = entry.parentFolder ?
             fileSystem.getTable().indexOf(entry.parentFolder) :
             bfs.NoFolder;
@@ -51,72 +41,64 @@ export function ToBinary(fileSystem: bfs.FileSystem) {
             folderIndex = bfs.NoFolder;
         }
 
-        binary[entryOfet + 1] = folderIndex;
+        binary.setUint8(entryOffset + 1, folderIndex);
         const nameBytes = nameToBytes(entry.name);
-        for (let nameI = 0; nameI < nameBytes.length; nameI++) {
-            binary[entryOfet + nameI + 2] = nameBytes[nameI];
+        for (let nameI = 0; nameI < nameBytes.buffer.byteLength; nameI++) {
+            binary.setUint8(entryOffset + nameI + 2, nameBytes.getUint8(nameI));
         }
 
         switch(entry.entryType) {
             case bfs.EntryType.File:
                 // We'll come back and populate this later
-                // TODO: Actually do that ^
-                BlockAddressOfets[entryI] = entryOfet + 18;
-                binary[entryOfet + 18] = BlockAddressNone[0];
-                binary[entryOfet + 19] = BlockAddressNone[1];
+                blockAddressOffsets[`${entryI}`] = entryOffset + 18;
+                binary.setUint16(entryOffset + 18, BlockAddressNone, true);
                 break;
             default:
-                binary[entryOfet + 18] = 0;
-                binary[entryOfet + 19] = 0;
+                binary.setUint16(entryOffset + 18, 0, true);
+        }
+    }
+
+    let blockIndex = 0;
+
+    const tableSize = bfs.MaxEntries * bfs.EntrySize;
+    const blockfieldStart = bfs.HeaderSize + tableSize;
+
+    for (let entryI = 0; entryI < bfs.MaxEntries; entryI++) {
+        const entry = fileSystem.getTable()[entryI];
+        if (entry?.entryType !== bfs.EntryType.File) {
+            continue;
         }
 
-        let blockIndex = 0;
+        const file = entry as bfs.FileEntry;
+        if (file.data.length === 0) {
+            continue;
+        }
+        const offset = blockAddressOffsets[`${entryI}`];
+        binary.setUint16(blockAddressOffsets[`${entryI}`], blockIndex, true);
 
-        const tableSize = bfs.MaxEntries * bfs.EntrySize;
-        const blockfieldStart = bfs.HeaderSize + tableSize;
+        const fileBlocks = Math.ceil(file.data.length / bfs.BlockDataSize);
+        if ((bfs.MaxBlocks - blockIndex) < fileBlocks) {
+            throw new bfs.FileSystemOutOfSpaceError();
+        }
 
-        for (let entryI = 0; entryI < bfs.MaxEntries; entryI++) {
-            const entry = fileSystem.getTable()[entryI];
-            if (entry?.entryType !== bfs.EntryType.File) {
-                continue;
+        for (let blockI = 0; blockI < fileBlocks; blockI++) {
+            const volumeOffset = blockfieldStart + (bfs.BlockRecordSize * blockIndex);
+            binary.setUint8(volumeOffset, 0x01);
+            binary.setUint8(volumeOffset + 1, 0);
+
+            const isEndOfFile = blockI == fileBlocks - 1;
+            if (!isEndOfFile) {
+                binary.setUint16(volumeOffset + 2, blockIndex + 1, true);
+            } else {
+                binary.setUint16(volumeOffset + 2, BlockAddressNone, true);
             }
 
-            const file = entry as bfs.FileEntry;
-            if (file.data.length === 0) {
-                continue;
+            const blockDataStart = blockI * bfs.BlockDataSize;
+            const slice = file.data.slice(blockDataStart, blockDataStart + bfs.BlockDataSize);
+            for (let dataI = 0; dataI < bfs.BlockDataSize; dataI++) {
+                binary.setUint8(volumeOffset + 4 + dataI, slice[dataI]);
             }
-
-            const blockAddress = new Uint16Array([blockIndex]);
-            binary[BlockAddressOfets[entryI]] = blockAddress[0];
-            binary[BlockAddressOfets[entryI] + 1] = blockAddress[1];
-
-            const fileBlocks = Math.ceil(file.data.length / bfs.BlockDataSize);
-            if ((bfs.MaxBlocks - blockIndex) < fileBlocks) {
-                throw new bfs.FileSystemOutOfSpaceError();
-            }
-
-            for (let blockI = 0; blockI < fileBlocks; blockI++) {
-                const volumeOffset = blockfieldStart + (bfs.BlockRecordSize * blockIndex);
-                binary[volumeOffset] = 0x01;
-                binary[volumeOffset + 1] = 0;
-
-                const isEndOfFile = blockI == fileBlocks - 1;
-                if (!isEndOfFile) {
-                    const nextAddress = new Uint16Array([blockIndex + 1]);
-                    binary[volumeOffset + 2] = nextAddress[0];
-                    binary[volumeOffset + 3] = nextAddress[1];
-                } else {
-                    binary[volumeOffset + 2] = BlockAddressNone[0];
-                    binary[volumeOffset + 3] = BlockAddressNone[1];
-                }
-
-                const blockDataStart = blockI * bfs.BlockDataSize;
-                const slice = file.data.slice(blockDataStart, blockDataStart + bfs.BlockDataSize);
-                for (let dataI = 0; dataI < bfs.BlockDataSize; dataI++) {
-                    binary[volumeOffset + 4 + dataI] = slice[dataI];
-                }
-                blockIndex++;
-            }
+            blockIndex++;
         }
     }
 

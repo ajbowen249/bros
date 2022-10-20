@@ -32,10 +32,10 @@ export function ToBinary(fileSystem: bfs.FileSystem) {
         binary.setUint8(entryOffset, entry.entryType);
         let folderIndex = entry.parentFolder ?
             fileSystem.getTable().indexOf(entry.parentFolder) :
-            bfs.NoFolder;
+            bfs.RootFolder;
 
         if (folderIndex < 0) {
-            folderIndex = bfs.NoFolder;
+            folderIndex = bfs.RootFolder;
         }
 
         binary.setUint8(entryOffset + 1, folderIndex);
@@ -44,14 +44,8 @@ export function ToBinary(fileSystem: bfs.FileSystem) {
             binary.setUint8(entryOffset + nameI + 2, nameBytes.getUint8(nameI));
         }
 
-        switch(entry.entryType) {
-            case bfs.EntryType.File:
-                // We'll come back and populate this later
-                binary.setUint16(entryOffset + 18, BlockAddressNone, true);
-                break;
-            default:
-                binary.setUint16(entryOffset + 18, 0, true);
-        }
+        // We'll come back and populate this later
+        binary.setUint16(entryOffset + 18, BlockAddressNone, true);
     }
 
     let blockIndex = 0;

@@ -196,7 +196,8 @@ void __fastcall__ vram_unrle(const unsigned char *data);
 
 
 //like a normal memcpy, but does not return anything
-void __fastcall__ memcpy(void *dst,void *src,unsigned int len);
+// Disabled so this file can be included alongside string.h
+// void __fastcall__ memcpy(void *dst,void *src,unsigned int len);
 
 //like memset, but does not return anything
 void __fastcall__ memfill(void *dst,unsigned char value,unsigned int len);

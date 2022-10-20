@@ -157,7 +157,7 @@ function save() {
     const anchorTag = document.createElement('a');
     const url = URL.createObjectURL(file);
     anchorTag.href = url;
-    anchorTag.download = 'brosVolume.sav';
+    anchorTag.download = 'bros.sav';
     document.body.appendChild(anchorTag);
     anchorTag.click();
     setTimeout(function() {

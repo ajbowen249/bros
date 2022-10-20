@@ -9,7 +9,8 @@ bool fsIsValid() {
     if (
         fsHeader->b != 'B' ||
         fsHeader->f != 'F' ||
-        fsHeader->s != 'S'
+        fsHeader->s != 'S' ||
+        fsHeader->version != BFS_VERSION
     ) {
         return 0;
     }
@@ -36,11 +37,33 @@ void formatFS() {
     }
 }
 
-
 void initFS() {
     if (fsIsValid()) {
         return;
     }
 
     formatFS();
+}
+
+unsigned char listFolder(unsigned char folderIndex, unsigned char offset, unsigned char maxEntries, FSEntry** entries) {
+    unsigned char foundItems;
+    unsigned int i;
+
+    for (i = offset; i < BFS_MAX_ENTRIES; ++i) {
+        FSEntry* entry = &fsTable->entries[i];
+        if (entry->folderIndex != folderIndex) {
+            continue;
+        }
+
+        if (entry->type != FSE_NONE) {
+            entries[foundItems] = entry;
+            ++foundItems;
+        }
+
+        if (foundItems >= maxEntries) {
+            break;
+        }
+    }
+
+    return foundItems;
 }

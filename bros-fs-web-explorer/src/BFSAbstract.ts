@@ -7,7 +7,7 @@ export const EntrySize = 20;
 export const MaxEntries = 50;
 export const BlockDataSize = 12;
 export const BlockHeaderSize = 4;
-export const NoFolder = 255;
+export const RootFolder = 255;
 export const BlockRecordSize = BlockDataSize + BlockHeaderSize;
 
 const availableBlockSpace = DefaultDiskVolumeSize - HeaderSize - (MaxEntries * EntrySize);
@@ -139,20 +139,33 @@ export function createTestFileSystem(): FileSystem {
     const fs = new FileSystem();
 
     const sysFolder = new FolderEntry(new Name('SYS', ''));
-    const emptySysFile = new FileEntry(new Name('EMPTYSYS', 'TXT'), sysFolder);
+    const systemFile = new FileEntry(
+        new Name('SYSTEM', 'TXT'),
+        sysFolder,
+        new TextEncoder().encode('JUST AN EXAMPLE TEXT FILE.')
+    );
+
     const userFolder = new FolderEntry(new Name('USR', ''));
     const docsFolder = new FolderEntry(new Name('DOCUMENTS', ''), userFolder);
-    const emptyDocFile = new FileEntry(new Name('EMPTYDOC', 'TXT'), docsFolder);
+    const docFile = new FileEntry(
+        new Name('EMPTYDOC', 'TXT'),
+        docsFolder,
+        new TextEncoder().encode('STORE YOUR DOCUMENTS HERE \n OR WHATEVER')
+    );
     const configFolder = new FolderEntry(new Name('CONFIG', ''), userFolder);
-    const emptyRootFile = new FileEntry(new Name('EMPTYROOT', 'TXT'));
+    const welcomeFile = new FileEntry(
+        new Name('WELCOME', 'TXT'),
+        undefined,
+        new TextEncoder().encode('WELCOME TO BROS, THE NINTENDO OPERATING SYSTEM!')
+    );
 
     fs.addEntry(sysFolder);
-    fs.addEntry(emptySysFile);
+    fs.addEntry(systemFile);
     fs.addEntry(userFolder);
     fs.addEntry(docsFolder);
-    fs.addEntry(emptyDocFile);
+    fs.addEntry(docFile);
     fs.addEntry(configFolder);
-    fs.addEntry(emptyRootFile);
+    fs.addEntry(welcomeFile);
 
     return fs;
 }

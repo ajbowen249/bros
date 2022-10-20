@@ -1,6 +1,7 @@
 #include "bros.h"
 #include "brosKernel.h"
 #include "brosGUI.h"
+#include "brosFS.h"
 #include "testApp1.h"
 #include "testApp2.h"
 
@@ -75,6 +76,8 @@ void main(void) {
 
     initGui();
 
+    initFS();
+
     setSystemError(SERR_SUCCESS);
     pal_col(1, 0x30); // set while color
 
@@ -85,7 +88,7 @@ void main(void) {
         *(target) = TestApplication1[testAppIdx];
     }
 
-    getProcessTable()->processes[0].state = PS_LOADED;
+    // getProcessTable()->processes[0].state = PS_LOADED;
 
     allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
     for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {

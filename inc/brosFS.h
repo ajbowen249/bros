@@ -65,11 +65,11 @@ typedef struct _FSFolderEntry {
     char placeholder;
 } FSFolderEntry;
 
-#define BFS_NO_FOLDER 255
+#define BFS_ROOT_FOLDER 255
 
 typedef struct _FSEntry {
     FSEntryType type;
-    char folderIndex;
+    unsigned char folderIndex;
     FSName name;
     union {
         FSFileEntry file;
@@ -98,10 +98,14 @@ typedef struct _FSBlock {
 #define BFS_AVAILABLE_SPACE (BFS_DEFAULT_DISK_VOLUME_SIZE - BFS_HEADER_SIZE - (BFS_MAX_ENTRIES * BFS_ENTRY_SIZE))
 #define BFS_MAX_BLOCKS (BFS_AVAILABLE_SPACE / BFS_BLOCK_RECORD_SIZE)
 
+#define BFS_EXT_SEPARATOR "."
+
 typedef struct _FSBlockField {
     FSBlock blocks[BFS_MAX_BLOCKS];
 } FSBlockField;
 
 void initFS();
+
+unsigned char listFolder(unsigned char folderIndex, unsigned char offset, unsigned char maxEntries, FSEntry** entries);
 
 #endif

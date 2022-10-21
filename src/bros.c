@@ -88,7 +88,7 @@ void main(void) {
         *(target) = TestApplication1[testAppIdx];
     }
 
-    // getProcessTable()->processes[0].state = PS_LOADED;
+    getProcessTable()->processes[0].state = PS_LOADED;
 
     allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
     for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
@@ -96,7 +96,7 @@ void main(void) {
         *(target) = TestApplication2[testAppIdx];
     }
 
-    getProcessTable()->processes[1].state = PS_LOADED;
+    // getProcessTable()->processes[1].state = PS_LOADED;
 
     // rendering is disabled at the startup, the palette is all black
 

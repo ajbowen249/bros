@@ -1,6 +1,8 @@
 #ifndef BROS_FS_H
 #define BROS_FS_H
 
+#include "bros.h"
+
 #define BFS_VERSION 1
 
 /**
@@ -67,9 +69,11 @@ typedef struct _FSFolderEntry {
 
 #define BFS_ROOT_FOLDER 255
 
+typedef unsigned char EntryIndex;
+
 typedef struct _FSEntry {
     FSEntryType type;
-    unsigned char folderIndex;
+    EntryIndex folderIndex;
     FSName name;
     union {
         FSFileEntry file;
@@ -106,6 +110,51 @@ typedef struct _FSBlockField {
 
 void initFS();
 
-unsigned char listFolder(unsigned char folderIndex, unsigned char offset, unsigned char maxEntries, FSEntry** entries);
+// Not really going to build a concept of locks for now. Similar to the "no security" theme; just behave
+
+// Also going to skip a concept of string paths for the first round.
+// Basing core functions on EntryIndex for now, then something in the future can resolve EntryIndices from paths.
+
+/**
+ * Populates a presized list of entries contained in the given folder
+ * 
+ * @param folderIndex The location of the folder entry in the table
+ * @param offset The number of entries in the folder to skip before populating the table
+ * @param maxEntries The number of entries that will fit in `entries`
+ * @param entries An array that stores `maxEntries` entries
+ */
+EntryIndex listFolder(EntryIndex folderIndex, EntryIndex offset, EntryIndex maxEntries, FSEntry** entries);
+
+/**
+ * A handle to a file on disk
+*/
+typedef struct _FSFileHandle {
+    // The file description
+    FSEntry* entry;
+
+    /**
+     * The block in the volume.
+     * `BLOCK_ADDRESS_NONE` is set when advanced past end of file
+     */
+    BlockAddress blockAddress;
+} FSFileHandle;
+
+/**
+ * Initializes the given file handle if a file entry exists at the given entry index.
+ * Returns false if the entry wasn't valid.
+ */
+bool openFile(EntryIndex fileIndex, FSFileHandle* handle);
+
+/**
+ * Copies a block of data to the given buffer and advances the handle's block pointer.
+ * Returns false if no data was read
+ */
+bool readBlock(FSFileHandle* handle, unsigned char data[BFS_BLOCK_DATA_SIZE]);
+
+/**
+ * Iterates the blockfield to count file block size
+ * Returns `BLOCK_ADDRESS_NONE` for bad file index
+ */
+BlockAddress getFileBlockSize(EntryIndex fileIndex);
 
 #endif

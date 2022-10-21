@@ -12,6 +12,7 @@ export const BlockRecordSize = BlockDataSize + BlockHeaderSize;
 
 const availableBlockSpace = DefaultDiskVolumeSize - HeaderSize - (MaxEntries * EntrySize);
 export const MaxBlocks = availableBlockSpace / BlockRecordSize;
+(window as any).MaxBlocks = MaxBlocks;
 export const VolumeDataCapacity = MaxBlocks * BlockDataSize;
 
 export class FileNameTooLongError extends Error {

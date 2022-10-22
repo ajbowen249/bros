@@ -8,6 +8,11 @@
                 <button @click="showNewFolderDialog = true">New Folder</button>
             </div>
             <div>
+                <button :disabled="!clipboard" @click="paste">
+                    Paste {{ clipboard?.name || '<none>' }}
+                </button>
+            </div>
+            <div>
                 <button @click="save">Save</button>
             </div>
             <div>
@@ -29,7 +34,16 @@
             <span v-else><button @click="selectParent()">{{ selectedFolder.name.toString() }}</button></span>
         </div>
         <div v-for="(item, index) of getItems()" :key="index">
-            <button @click="select(item)">{{ item.name.toString() }}</button>
+            <div v-if="item.entryType == EntryType.Folder">
+                <button @click="select(item)">{{ item.name.toString() }}</button>
+                &nbsp;<button @click="deleteItem(item)">&#x1F5D1;</button>
+                <!-- IMPROVE: Folder movement -->
+            </div>
+            <div v-else-if="item.entryType == EntryType.File">
+                {{ item.name.toString() }}
+                &nbsp;<button @click="deleteItem(item)">&#x1F5D1;</button>
+                &nbsp;<button @click="cutItem(item)">&#x2700;</button>
+            </div>
         </div>
         <div v-if="showNewFileDialog" class="dialog">
             <h1>
@@ -61,6 +75,7 @@
 import { ref, onMounted } from 'vue';
 import * as bfs from '../BFSAbstract';
 import * as bfsBinary from '../BFSBinary';
+import { cloneDeep } from 'lodash';
 
 const showNewFileDialog = ref(false);
 const showNewFolderDialog = ref(false);
@@ -69,6 +84,7 @@ const newFolderNameInput = ref('');
 
 const fileSystem = ref(bfs.createTestFileSystem());
 const selectedFolder = ref<bfs.FolderEntry | null>(null);
+const clipboard = ref<bfs.Entry | null>(null);
 
 const getEntries = () => fileSystem.value.getTable().length;
 const getBlocks = () => fileSystem.value.getTable()
@@ -83,6 +99,7 @@ const getBytes = () => getBlocks() * bfs.BlockDataSize;
 const MaxEntries = bfs.MaxEntries;
 const MaxBlocks = bfs.MaxBlocks;
 const MaxBytes = bfs.MaxBlocks * bfs.BlockDataSize;
+const EntryType = bfs.EntryType;
 
 function getItems(): bfs.Entry[] {
     return fileSystem.value.getTable().filter(x =>
@@ -129,7 +146,7 @@ async function addFileFromDisk(event: Event) {
             fileContent
         );
 
-        fileSystem.value.addEntry(entry);
+        fileSystem.value.addEntry(entry, true);
     } catch {
         alert('Problem loading file');
     }
@@ -143,7 +160,7 @@ function createFolder() {
             createName(newFolderNameInput.value),
             selectedFolder.value as bfs.FolderEntry ?? undefined
         );
-        fileSystem.value.addEntry(entry);
+        fileSystem.value.addEntry(entry, false);
     } catch {
         alert('Problem adding folder');
     }
@@ -164,6 +181,26 @@ function save() {
         document.body.removeChild(anchorTag);
         window.URL.revokeObjectURL(url);
     }, 0); 
+}
+
+function deleteItem(item: bfs.Entry) {
+    fileSystem.value.deleteEntry(item);
+}
+
+function cutItem(item: bfs.Entry) {
+    clipboard.value = item;
+    clipboard.value.parentFolder = null;
+    fileSystem.value.deleteEntry(item);
+}
+
+function paste() {
+    if (!clipboard.value) {
+        return;
+    }
+
+    const entry = cloneDeep(clipboard.value);
+    entry.parentFolder = selectedFolder.value;
+    fileSystem.value.addEntry(entry as bfs.Entry, true);
 }
 
 </script>

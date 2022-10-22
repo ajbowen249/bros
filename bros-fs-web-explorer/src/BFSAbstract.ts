@@ -43,6 +43,17 @@ export class FileSystemOutOfSpaceError extends Error {
     }
 }
 
+export class FileConflictError extends Error {
+    public readonly addingEntry: Entry;
+    public readonly conflictingEntry: Entry;
+    constructor(addingEntry: Entry, conflictingEntry: Entry) {
+        super(`Conflicting entries ${addingEntry.name.toString()}`);
+
+        this.addingEntry = addingEntry;
+        this.conflictingEntry = conflictingEntry;
+    }
+}
+
 export class Name {
     private _name: string;
     private _extension: string;
@@ -68,6 +79,10 @@ export class Name {
 
     toString(): string {
         return `${this.name}${this.extension.length ? `.${this.extension}`  : ''}`;
+    }
+
+    equals(other: Name) {
+        return other.name === this.name && other.extension === this.extension;
     }
 
     private validateLength(str: string, isName: boolean = true) {
@@ -123,12 +138,35 @@ export class FileSystem {
         this.table = [];
     }
 
-    addEntry(entry: Entry) {
+    addEntry(entry: Entry, overwrite: boolean = false) {
+        const conflict = this.table.find(x =>
+            x.parentFolder === entry.parentFolder &&
+            x.name.equals(entry.name)
+        );
+
+        if (conflict) {
+            if (
+                !overwrite ||
+                !(conflict.entryType === EntryType.File && entry.entryType === EntryType.File)
+            ) {
+                throw new FileConflictError(entry, conflict);
+            }
+
+            this.deleteEntry(conflict);
+        }
+
         if (this.table.length >= MaxEntries) {
             throw new FileSystemFullError();
         }
 
         this.table.push(entry);
+    }
+
+    deleteEntry(entry: Entry) {
+        this.table = this.table.filter(x => x !== entry);
+        if (entry.entryType === EntryType.Folder) {
+            this.table = this.table.filter(x => x.parentFolder !== entry);
+        }
     }
 
     getTable(): Entry[] {

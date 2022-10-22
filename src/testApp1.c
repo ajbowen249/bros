@@ -9,28 +9,24 @@
 
 static GUIControl testApp1TitleLabel;
 static GUIControl ta1Label1;
-static GUIControl ta1Label2;
-static GUIControl testApp1ExitLabel;
 
-static const char* testApp1Title = "FILE SIZE TEST";
+static const char* testApp1Title = "FILE READ TEST";
 
-static char ta1Label1Text[10] = "         ";
-static char ta1Label2Text[(BFS_BLOCK_DATA_SIZE) + 1] = "123456789ABC";
+static char ta1Label1Text[18] = "                 ";
 
-static const char* testApp1ExitText = "TEST APP 1 EXIT";
-
-static int blockCounter;
+#define NUM_LINES 10
+GUIControl fileLines[NUM_LINES];
+char fileText[NUM_LINES][13];
 
 static BlockAddress fileSize;
 static bool gotFile;
 static FSFileHandle handle;
 
-static unsigned int counter;
 static unsigned char block[BFS_BLOCK_DATA_SIZE];
 
 void testApp1Start() {
     EntryIndex fileIndex = 6;
-    counter = 0;
+    char lineIndex = 0;
 
     addLabel(&testApp1TitleLabel);
     testApp1TitleLabel.control.label.maxLength = 14;
@@ -39,61 +35,50 @@ void testApp1Start() {
     testApp1TitleLabel.control.label.y = 5;
 
     addLabel(&ta1Label1);
-    ta1Label1.control.label.maxLength = 4;
+    ta1Label1.control.label.maxLength = 17;
     ta1Label1.control.label.value = ta1Label1Text;
     ta1Label1.control.label.x = 2;
     ta1Label1.control.label.y = 6;
-
-    addLabel(&ta1Label2);
-    ta1Label2.control.label.maxLength = 13;
-    ta1Label2.control.label.value = ta1Label2Text;
-    ta1Label2.control.label.x = 2;
-    ta1Label2.control.label.y = 7;
-
-    addLabel(&testApp1ExitLabel);
-    testApp1ExitLabel.control.label.maxLength = 15;
-    testApp1ExitLabel.control.label.value = testApp1ExitText;
-    testApp1ExitLabel.control.label.x = 2;
-    testApp1ExitLabel.control.label.y = 8;
-    testApp1ExitLabel.isVisible = 0;
 
     fileSize = getFileBlockSize(fileIndex);
     gotFile = fileSize != BLOCK_ADDRESS_NONE;
     if (!gotFile) {
         sprintf(ta1Label1Text, "NO FILE");
+        exitCurrentProcess();
+        guiNeedsRefresh();
+        return;
     } else {
-        sprintf(ta1Label1Text, "SIZE %i", fileSize);
+        char* name;
+        size_t nameLength;
+        size_t extLength;
+        openFile(fileIndex, &handle);
+        name = handle.entry->name.name;
+        nameLength = strnlen(name, BFS_NAME_LENGTH);
+        extLength = strnlen(handle.entry->name.extension, BFS_NAME_LENGTH);
+        strcpy(ta1Label1Text, "TEST             ");
+        strncpy(ta1Label1Text, name, BFS_NAME_LENGTH);
+        if (extLength > 0) {
+            strncpy(ta1Label1Text + nameLength, BFS_EXT_SEPARATOR, 1);
+            strncpy(ta1Label1Text + nameLength + 1, handle.entry->name.extension, BFS_EXTENSION_LENGTH);
+        }
     }
 
-    openFile(fileIndex, &handle);
-    blockCounter = 0;
+    for (lineIndex = 0; lineIndex < NUM_LINES && lineIndex < fileSize; lineIndex++) {
+        addLabel(&fileLines[lineIndex]);
+        fileLines[lineIndex].control.label.value = fileText[lineIndex];
+        fileLines[lineIndex].control.label.x = 2;
+        fileLines[lineIndex].control.label.y = 8 + lineIndex;
+
+        readBlock(&handle, block);
+        strncpy(fileText[lineIndex], block, BFS_BLOCK_DATA_SIZE);
+    }
+
     guiNeedsRefresh();
+    exitCurrentProcess();
 }
 
 void testApp1Proc() {
-    if (counter++ % 60 != 0) {
-        return;
-    }
 
-    if (!gotFile) {
-        return;
-    }
-
-    if (blockCounter >= fileSize) {
-        handle.blockAddress = handle.entry->entry.file.firstBlock;
-        blockCounter = 0;
-    }
-
-    blockCounter++;
-    guiNeedsRefresh();
-
-    if (readBlock(&handle, block)) {
-        strncpy(ta1Label2Text, block, BFS_BLOCK_DATA_SIZE);
-    } else {
-        sprintf(ta1Label2Text, "%s", "NO FILE");
-    }
-
-    guiNeedsRefresh();
 }
 
 void testApp1Exit() {

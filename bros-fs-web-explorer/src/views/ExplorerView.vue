@@ -1,5 +1,5 @@
 <template>
-    <main>
+    <main :class="[ editingEntry && 'half' ]">
         <div class="toolbar">
             <div>
                 <button @click="showNewFileDialog = true">New File</button>
@@ -43,6 +43,7 @@
                 {{ item.name.toString() }}
                 &nbsp;<button @click="deleteItem(item)">&#x1F5D1;</button>
                 &nbsp;<button @click="cutItem(item)">&#x2700;</button>
+                &nbsp;<button @click="editFile(item)">&#x270F;</button>
             </div>
         </div>
         <div v-if="showNewFileDialog" class="dialog">
@@ -69,6 +70,21 @@
             <button @click="showNewFolderDialog = false">Cancel</button>
         </div>
     </main>
+    <!-- eslint-disable-next-line vue/no-multiple-template-root -->
+    <aside v-if="editingEntry" class="half editor-container">
+        <div class="toolbar">
+            <div>
+                Editing {{ editingEntry.name.toString() }}
+            </div>
+            <div>
+                <button @click="saveFile">Save</button>
+            </div>
+            <div>
+                <button @click="editingEntry = null">Close</button>
+            </div>
+        </div>
+        <textarea cols="32" rows="30" v-model="editingText" />
+    </aside>
 </template>
 
 <script setup lang="ts">
@@ -85,6 +101,8 @@ const newFolderNameInput = ref('');
 const fileSystem = ref(bfs.createTestFileSystem());
 const selectedFolder = ref<bfs.FolderEntry | null>(null);
 const clipboard = ref<bfs.Entry | null>(null);
+const editingEntry = ref<bfs.FileEntry | null>(null);
+const editingText = ref<string>('');
 
 const getEntries = () => fileSystem.value.getTable().length;
 const getBlocks = () => fileSystem.value.getTable()
@@ -203,12 +221,31 @@ function paste() {
     fileSystem.value.addEntry(entry as bfs.Entry, true);
 }
 
+function editFile(item: bfs.Entry) {
+    if (item.entryType !== bfs.EntryType.File) {
+        return;
+    }
+
+    editingEntry.value = item as bfs.FileEntry;
+    const data = (item as bfs.FileEntry).data;
+    editingText.value = new TextDecoder().decode(data);
+}
+
+function saveFile() {
+    if (!editingEntry.value) {
+        return;
+    }
+
+    editingEntry.value.data = new TextEncoder().encode(editingText.value.toUpperCase());
+}
+
 </script>
 
 <style scoped lang="scss">
 .toolbar {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
 
     > div {
         margin-left: .2rem;
@@ -228,4 +265,18 @@ function paste() {
 
     padding: 1rem;
 }
+
+.half {
+    max-width: 50vw;
+}
+
+.editor-container {
+    position: absolute;
+    left: 50vw;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    border-left: 1px solid black;
+}
+
 </style>

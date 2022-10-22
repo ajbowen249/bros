@@ -106,7 +106,7 @@ bool readBlock(FSFileHandle* handle, unsigned char data[BFS_BLOCK_DATA_SIZE]) {
         return 0;
     }
 
-    block = &(fsBlockField[handle->blockAddress]);
+    block = &(fsBlockField->blocks[handle->blockAddress]);
     if (!block->isOccupied) {
         setSystemError(SERR_FS_BLOCK_INVALID);
         return 0;

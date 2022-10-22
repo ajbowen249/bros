@@ -81,18 +81,14 @@ void testApp1Proc() {
 
     if (blockCounter >= fileSize) {
         handle.blockAddress = handle.entry->entry.file.firstBlock;
-        sprintf(ta1Label2Text, "%s", "PAST END");
-        guiNeedsRefresh();
-        exitCurrentProcess();
-        return;
+        blockCounter = 0;
     }
-    sprintf(ta1Label2Text, "%i", handle.blockAddress);
+
     blockCounter++;
     guiNeedsRefresh();
 
     if (readBlock(&handle, block)) {
-    //    sprintf(ta1Label2Text, "%s", "            ");
-      //  strncpy(ta1Label2Text, block, BFS_BLOCK_DATA_SIZE);
+        strncpy(ta1Label2Text, block, BFS_BLOCK_DATA_SIZE);
     } else {
         sprintf(ta1Label2Text, "%s", "NO FILE");
     }

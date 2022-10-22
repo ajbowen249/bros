@@ -54,6 +54,7 @@ bool allocateProcess(const ApplicationHeader* header, unsigned int fileSize) {
 
     for (; pid < MAX_BROS_PROCESSES; ++pid) {
         unsigned int endAddress = BROS_APPLICATION_RAM_SIZE;
+        unsigned int location = offset + BROS_APP_RAM_START;
         process = &g_processTable.processes[pid];
         if (process->state != PS_INACTIVE) {
             offset += process->size;
@@ -76,12 +77,12 @@ bool allocateProcess(const ApplicationHeader* header, unsigned int fileSize) {
             continue;
         }
 
-        process->location = offset + WRAM_START;
+        process->location = location;
         process->size = memorySize;
 
-        process->start = header->startOffset ? WRAM_START + offset + header->startOffset : 0;
-        process->proc = header->procOffset ? WRAM_START + offset + header->procOffset : 0;
-        process->onExit = header->exitOffset ? WRAM_START + offset + header->exitOffset : 0;
+        process->start = header->startOffset ? location + header->startOffset : 0;
+        process->proc = header->procOffset ? location + header->procOffset : 0;
+        process->onExit = header->exitOffset ? location + header->exitOffset : 0;
         process->state = PS_LOADING;
 
         return 1;

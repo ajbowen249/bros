@@ -17,6 +17,8 @@
 
 #define WRAM_START 0x6000
 
+#define BROS_APP_RAM_START 0x7000
+
 #define NAMETABLE_WIDTH 32
 #define NAMETABLE_HEIGHT 30
 
@@ -29,7 +31,7 @@ typedef enum _SystemError {
     SERR_SUCCESS = 0,
 
     // Kernel Routine Errors
-    SERR_INVALID_PID = 001,
+    SERR_INVALID_PID = 1,
 
     // Process Loading Errors
 
@@ -38,6 +40,20 @@ typedef enum _SystemError {
 
     // Could not find a continguous memory block big enough to run the application
     SERR_NOT_ENOUGH_MEMORY = 102,
+
+    // FIlesystem errors
+
+    // A given entry index isn't occupied
+    SERR_FS_INVALID_INDEX = 201,
+
+    // A given entry index isn't a folder
+    SERR_FS_ENTRY_NOT_FOLDER = 202,
+
+    // A given entry index isn't a file
+    SERR_FS_ENTRY_NOT_FILE = 203,
+
+    // Attempted to read an unoccupied block
+    SERR_FS_BLOCK_INVALID = 204,
 } SystemError;
 
 // The first bytes of any application file

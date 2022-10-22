@@ -1,6 +1,7 @@
 #include "bros.h"
 #include "brosKernel.h"
 #include "brosGUI.h"
+#include "brosFS.h"
 #include "testApp1.h"
 #include "testApp2.h"
 
@@ -75,6 +76,8 @@ void main(void) {
 
     initGui();
 
+    initFS();
+
     setSystemError(SERR_SUCCESS);
     pal_col(1, 0x30); // set while color
 
@@ -93,7 +96,7 @@ void main(void) {
         *(target) = TestApplication2[testAppIdx];
     }
 
-    getProcessTable()->processes[1].state = PS_LOADED;
+    // getProcessTable()->processes[1].state = PS_LOADED;
 
     // rendering is disabled at the startup, the palette is all black
 

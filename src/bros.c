@@ -82,19 +82,19 @@ void main(void) {
     pal_col(1, 0x30); // set while color
 
 
-    allocateProcess((ApplicationHeader*)TestApplication1, TA1_LENGTH);
-    for (testAppIdx = 0; testAppIdx < TA1_LENGTH; ++testAppIdx) {
-        unsigned int* target = getProcessTable()->processes[0].location + testAppIdx;
-        *(target) = TestApplication1[testAppIdx];
-    }
+    //allocateProcess((ApplicationHeader*)TestApplication1, TA1_LENGTH);
+    //for (testAppIdx = 0; testAppIdx < TA1_LENGTH; ++testAppIdx) {
+   //     unsigned int* target = getProcessTable()->processes[0].location + testAppIdx;
+   //     *(target) = TestApplication1[testAppIdx];
+   // }
 
-    getProcessTable()->processes[0].state = PS_LOADED;
+    //getProcessTable()->processes[0].state = PS_LOADED;
 
-    allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
-    for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
-        unsigned int* target = getProcessTable()->processes[1].location + testAppIdx;
-        *(target) = TestApplication2[testAppIdx];
-    }
+    //allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
+   // for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
+    //    unsigned int* target = getProcessTable()->processes[1].location + testAppIdx;
+   //     *(target) = TestApplication2[testAppIdx];
+    //}
 
     // getProcessTable()->processes[1].state = PS_LOADED;
 

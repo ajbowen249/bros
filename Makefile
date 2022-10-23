@@ -9,10 +9,14 @@ LD := $(CC65_DIR)/bin/ld65
 CC_ANNOTATE := python ./annotateld65/annotatecc65.py
 LD_ANNOTATE := python ./annotateld65/annotateld65.py
 
+PROCESS_APP_ASM := python ./applicationTools/process_asm.py
+
 INC_DIR := ./inc
 SRC_DIR := ./src
+APP_SRC_DIR := $(SRC_DIR)/applications
 
 C_SRC_FILES := $(wildcard $(SRC_DIR)/*.c)
+C_APP_FILES := $(wildcard $(APP_SRC_DIR)/*.c)
 ASM_SRC_FILES := $(wildcard $(SRC_DIR)/*.s)
 
 TARGET_PLATFORM := nes
@@ -24,10 +28,13 @@ BUILD_DIR := ./build
 ASM_ODIR := $(BUILD_DIR)
 OBJ_ODIR := $(BUILD_DIR)
 COMPILED_ASM := $(patsubst $(SRC_DIR)/%, $(ASM_ODIR)/%, $(C_SRC_FILES:.c=.s))
+COMPILED_APP_ASM := $(patsubst $(APP_SRC_DIR)/%, $(ASM_ODIR)/%, $(C_APP_FILES:.c=.s.app))
+COMPILED_APP_OBJ :=$(COMPILED_APP_ASM:.s.app=.o.app)
+APP_BINARY_FILES :=$(COMPILED_APP_OBJ:.o.app=.nes.app)
 C_OBJECT_FILES := $(COMPILED_ASM:.s=.o)
 ASM_OBJECT_FILES := $(OBJ_ODIR)/crt0.o
 
-TARGET := $(BUILD_DIR)/bros.nes
+KERNEL := $(BUILD_DIR)/bros.nes
 
 .PHONY: all
 
@@ -35,30 +42,57 @@ TARGET := $(BUILD_DIR)/bros.nes
 .SUFFIXES:
 
 # Make sure intermediate files are not deleted
-.PRECIOUS: $(BUILD_DIR)/%.s $(BUILD_DIR)/%.o
+.PRECIOUS: $(BUILD_DIR)/%.s $(BUILD_DIR)/%.s.app $(BUILD_DIR)/%.o $(BUILD_DIR)/%.o.app
 
-all: $(TARGET)
+all: $(KERNEL) $(APP_BINARY_FILES)
 
+# Kernel build. This makes the actual NES ROM file
+
+# Kernel C files
 $(ASM_ODIR)/%.s: $(SRC_DIR)/%.c
 	@mkdir -p $(BUILD_DIR)
 	$(CC) -o ./$(patsubst %.s,%.annotate.s,$@) -Oi $< --target $(TARGET_PLATFORM) -I$(CC65_DIR)/include/ -I$(INC_DIR) --add-source
-	$(CC_ANNOTATE) ./$@ 
+	$(CC_ANNOTATE) ./$@
 
+# Kernel ASM from C
 $(OBJ_ODIR)/%.o: $(ASM_ODIR)/%.s
 	@mkdir -p $(BUILD_DIR)
 	$(CA) $<
 
+# Kernel ASM
 $(OBJ_ODIR)/%.o: $(SRC_DIR)/%.s
 	@mkdir -p $(BUILD_DIR)
 	$(CA) -o ./$@ $<
 
+# Final NES file
 $(BUILD_DIR)/%.nes: $(C_OBJECT_FILES) $(ASM_OBJECT_FILES)
 	@mkdir -p $(BUILD_DIR)
 	$(LD) -Ln $(BUILD_DIR)/debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
 	$(LD_ANNOTATE) -Ln $(BUILD_DIR)/debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
 
+# Application build. These are compiled to BrOS application binaries with a special header to help the OS relocate them
+
+# Application C files
+$(ASM_ODIR)/%.s.app: $(APP_SRC_DIR)/%.c
+	@mkdir -p $(BUILD_DIR)
+	$(CC) -o $@ -Oi $< --target $(TARGET_PLATFORM) -I$(CC65_DIR)/include/ -I$(INC_DIR)
+	$(PROCESS_APP_ASM) $@
+
+# Application object files
+$(OBJ_ODIR)/%.o.app: $(ASM_ODIR)/%.s.app
+	@mkdir -p $(BUILD_DIR)
+	$(warn "HERE" $<)
+	$(CA) -o $@ $<
+
+# Application binaries
+$(BUILD_DIR)/%.nes.app: $(OBJ_ODIR)/%.o.app $(C_OBJECT_FILES) $(ASM_OBJECT_FILES)
+	@mkdir -p $(BUILD_DIR)
+# Not quite working yet. Most things from the app seem to be making it to the correct symbol location, but somewhere
+# Things that need to be fixed in memory are getting moved around.
+	$(LD) -Ln ./$(patsubst %.nes.app,%.symbols,$@) -C app_rom.cfg -o $@ $^ $(TARGET_PLATFORM).lib
+
 clean:
 	@rm -rfv $(BUILD_DIR)
 
-run: $(TARGET)
+run: $(KERNEL)
 	$(EMULATOR) $<

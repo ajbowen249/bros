@@ -5,6 +5,11 @@
 #include <string.h>
 #include <stdio.h>
 
+#pragma code-name(push, "APP_DATA")
+#pragma bss-name(push, "APP_BSS")
+#pragma data-name(push, "APP_DATA")
+#pragma rodata-name(push, "APP_DATA")
+
 GUIControl startLabel;
 GUIControl procLabel;
 GUIControl endLabel;
@@ -55,3 +60,8 @@ void atExit() {
     endLabel.isVisible = 1;
     guiNeedsRefresh();
 }
+
+#pragma rodata-name(pop)
+#pragma data-name(pop)
+#pragma bss-name(pop)
+#pragma code-name(pop)

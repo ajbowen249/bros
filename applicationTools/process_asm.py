@@ -9,8 +9,10 @@ def main():
         input_text = input_file.read()
 
     input_text = '.org $7000; Initialize offset to beginning of process ram\n' + input_text
-    # input_text = re.sub(r"\t\.fopt.*?\n", "", input_text)
-    # input_text = re.sub(r"\t\.export.*?\n", "", input_text)
+    # Don't import anything. All symbols come from generated config.
+    # input_text = re.sub(r"\t\.import.*?\n", "", input_text)
+    # input_text = re.sub(r"\t\.importzp.*?\n", "", input_text)
+    # input_text = re.sub(r"\t\.autoimport\ton\n", "\t.autoimport\toff\n", input_text)
 
     with open(input_filename, 'w') as output_file:
         output_file.write(input_text)

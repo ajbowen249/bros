@@ -10,6 +10,7 @@ CC_ANNOTATE := python ./annotateld65/annotatecc65.py
 LD_ANNOTATE := python ./annotateld65/annotateld65.py
 
 PROCESS_APP_ASM := python ./applicationTools/process_asm.py
+INSERT_SYMBOLS := python ./applicationTools/add_symbols_to_app_config.py
 
 INC_DIR := ./inc
 SRC_DIR := ./src
@@ -33,6 +34,9 @@ COMPILED_APP_OBJ :=$(COMPILED_APP_ASM:.s.app=.o.app)
 APP_BINARY_FILES :=$(COMPILED_APP_OBJ:.o.app=.nes.app)
 C_OBJECT_FILES := $(COMPILED_ASM:.s=.o)
 ASM_OBJECT_FILES := $(OBJ_ODIR)/crt0.o
+
+SOURCE_APP_CONFIG_FILE := ./app_rom.cfg
+GENERATED_APP_CONFIG_FILE := $(BUILD_DIR)/generated_app_config.cfg
 
 KERNEL := $(BUILD_DIR)/bros.nes
 
@@ -69,6 +73,7 @@ $(BUILD_DIR)/%.nes: $(C_OBJECT_FILES) $(ASM_OBJECT_FILES)
 	@mkdir -p $(BUILD_DIR)
 	$(LD) -Ln $(BUILD_DIR)/debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
 	$(LD_ANNOTATE) -Ln $(BUILD_DIR)/debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
+	$(INSERT_SYMBOLS) $(BUILD_DIR)/debugSymbols $(SOURCE_APP_CONFIG_FILE) $(GENERATED_APP_CONFIG_FILE)
 
 # Application build. These are compiled to BrOS application binaries with a special header to help the OS relocate them
 
@@ -85,11 +90,12 @@ $(OBJ_ODIR)/%.o.app: $(ASM_ODIR)/%.s.app
 	$(CA) -o $@ $<
 
 # Application binaries
-$(BUILD_DIR)/%.nes.app: $(OBJ_ODIR)/%.o.app $(C_OBJECT_FILES) $(ASM_OBJECT_FILES)
+# $(BUILD_DIR)/%.nes.app: $(C_OBJECT_FILES) $(ASM_OBJECT_FILES) $(OBJ_ODIR)/%.o.app
+$(BUILD_DIR)/%.nes.app: $(OBJ_ODIR)/%.o.app
 	@mkdir -p $(BUILD_DIR)
 # Not quite working yet. Most things from the app seem to be making it to the correct symbol location, but somewhere
 # Things that need to be fixed in memory are getting moved around.
-	$(LD) -Ln ./$(patsubst %.nes.app,%.symbols,$@) -C app_rom.cfg -o $@ $^ $(TARGET_PLATFORM).lib
+	$(LD) --allow-multiple-definition -Ln ./$(patsubst %.nes.app,%.symbols,$@) -C $(GENERATED_APP_CONFIG_FILE) -o $@ $^ $(TARGET_PLATFORM).lib
 
 clean:
 	@rm -rfv $(BUILD_DIR)

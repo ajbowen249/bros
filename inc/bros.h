@@ -11,7 +11,7 @@
 #define BROS_APPLICATION_RAM_SIZE 8192
 
 // shorthand for people used to using bool
-#define bool unsigned char
+typedef unsigned char bool;
 
 #define nullptr 0
 

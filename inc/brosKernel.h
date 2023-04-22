@@ -24,4 +24,9 @@ unsigned int getPid();
 
 ProcessTable* getProcessTable();
 
+// These are wrappers around standard library methods. Including the standard library in application c files has proven
+// problematic, and this helps keep them stable.
+
+int b_sprintf(char* buf, const char* format, ...);
+
 #endif

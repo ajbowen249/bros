@@ -1,5 +1,9 @@
 #include "brosKernel.h"
 
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+
 // The actual process table
 ProcessTable g_processTable;
 
@@ -144,4 +148,14 @@ unsigned int getPid() {
 
 ProcessTable* getProcessTable() {
     return &g_processTable;
+}
+
+int b_sprintf(char* buf, const char* fmt, ...) {
+    int ret;
+    va_list args;
+    va_start(args, fmt);
+    ret = vsprintf(buf, fmt, args);
+    va_end(args);
+
+    return ret;
 }

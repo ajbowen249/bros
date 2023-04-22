@@ -8,7 +8,7 @@ def main():
     with open(input_filename, 'r') as input_file:
         input_text = input_file.read()
 
-    input_text = '.org $7000; Initialize offset to beginning of process ram\n' + input_text
+    # input_text = '.org $7000; Initialize offset to beginning of process ram\n' + input_text
     # Don't import anything. All symbols come from generated config.
     # input_text = re.sub(r"\t\.import.*?\n", "", input_text)
     # input_text = re.sub(r"\t\.importzp.*?\n", "", input_text)

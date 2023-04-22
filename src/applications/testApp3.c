@@ -2,13 +2,10 @@
 #include "brosKernel.h"
 #include "brosGUI.h"
 
-#include <string.h>
-#include <stdio.h>
-
-#pragma code-name(push, "APP_DATA")
-#pragma bss-name(push, "APP_BSS")
-#pragma data-name(push, "APP_DATA")
-#pragma rodata-name(push, "APP_DATA")
+// #pragma code-name(push, "APP_DATA")
+// #pragma bss-name(push, "APP_BSS")
+// #pragma data-name(push, "APP_DATA")
+// #pragma rodata-name(push, "APP_DATA")
 
 GUIControl startLabel;
 GUIControl procLabel;
@@ -47,7 +44,7 @@ void start() {
 
 void proc() {
     if (counter++ % 30 == 0) {
-        sprintf(procText, "PROC %i", counter);
+        b_sprintf(procText, "PROC %i", counter);
         guiNeedsRefresh();
     }
 
@@ -61,7 +58,7 @@ void atExit() {
     guiNeedsRefresh();
 }
 
-#pragma rodata-name(pop)
-#pragma data-name(pop)
-#pragma bss-name(pop)
-#pragma code-name(pop)
+// #pragma rodata-name(pop)
+// #pragma data-name(pop)
+// #pragma bss-name(pop)
+// #pragma code-name(pop)

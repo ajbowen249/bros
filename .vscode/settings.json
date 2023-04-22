@@ -5,6 +5,7 @@
         "brosgui.h": "c",
         "testapp1.h": "c",
         "broskernel.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "stdio.h": "c"
     }
 }

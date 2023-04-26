@@ -2,9 +2,13 @@
 #CC65_DIR := cc65
 CC65_DIR := "/c/Program Files/cc65"
 
-CC := $(CC65_DIR)/bin/cc65
-CA := $(CC65_DIR)/bin/ca65
-LD := $(CC65_DIR)/bin/ld65
+# CC := $(CC65_DIR)/bin/cc65
+# CA := $(CC65_DIR)/bin/ca65
+# LD := $(CC65_DIR)/bin/ld65
+
+CC := cc65
+CA := ca65
+LD := ld65
 
 CC_ANNOTATE := python ./annotateld65/annotatecc65.py
 LD_ANNOTATE := python ./annotateld65/annotateld65.py

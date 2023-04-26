@@ -75,8 +75,8 @@ $(OBJ_ODIR)/%.o: $(SRC_DIR)/%.s
 # Final NES file
 $(BUILD_DIR)/%.nes: $(C_OBJECT_FILES) $(ASM_OBJECT_FILES)
 	@mkdir -p $(BUILD_DIR)
-	$(LD) -Ln $(BUILD_DIR)/debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
-	$(LD_ANNOTATE) -Ln $(BUILD_DIR)/debugSymbols -C nrom_128_horz.cfg -o $@ $^ $(TARGET_PLATFORM).lib
+	$(LD) -Ln $(BUILD_DIR)/debugSymbols -C kernel_rom.cfg -o $@ $^ $(TARGET_PLATFORM).lib
+	$(LD_ANNOTATE) -Ln $(BUILD_DIR)/debugSymbols -C kernel_rom.cfg -o $@ $^ $(TARGET_PLATFORM).lib
 	$(INSERT_SYMBOLS) $(BUILD_DIR)/debugSymbols $(SOURCE_APP_CONFIG_FILE) $(GENERATED_APP_CONFIG_FILE)
 
 # Application build. These are compiled to BrOS application binaries with a special header to help the OS relocate them

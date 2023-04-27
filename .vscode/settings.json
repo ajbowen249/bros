@@ -6,6 +6,9 @@
         "testapp1.h": "c",
         "broskernel.h": "c",
         "string.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "brosapi.h": "c",
+        "brosguitypes.h": "c",
+        "brosfs.h": "c"
     }
 }

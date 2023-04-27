@@ -52,10 +52,6 @@ bool addLabel(GUIControl* label) {
     return 1;
 }
 
-void invalidate() {
-    g_guiNeedsRefresh = 1;
-}
-
 void clearScreen() {
     // IMPROVE: This is SLOW and dumb. Attempts at just writing the block have failed.
     //          Must be a better way to do this.

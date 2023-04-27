@@ -1,9 +1,10 @@
 #include "bros.h"
+#include "brosAPIImpl.h"
 #include "brosKernel.h"
 #include "brosGUI.h"
 #include "brosFS.h"
 #include "testApp1.h"
-#include "testApp2.h"
+// #include "testApp2.h"
 
 #include "neslib.h"
 #include <stdlib.h>
@@ -54,23 +55,25 @@ void main(void) {
     TestApplication1[26] = (unsigned char)((unsigned int)testApp1Exit >> 8);
     TestApplication1[27] = 0x60; // rts
 
-    // start() 2
-    TestApplication2[16] = 0x20;
-    TestApplication2[17] = (unsigned char)testApp2Start;
-    TestApplication2[18] = (unsigned char)((unsigned int)testApp2Start >> 8);
-    TestApplication2[19] = 0x60; // rts
+    // // start() 2
+    // TestApplication2[16] = 0x20;
+    // TestApplication2[17] = (unsigned char)testApp2Start;
+    // TestApplication2[18] = (unsigned char)((unsigned int)testApp2Start >> 8);
+    // TestApplication2[19] = 0x60; // rts
 
-    // proc() 2
-    TestApplication2[20] = 0x20;
-    TestApplication2[21] = (unsigned char)testApp2Proc;
-    TestApplication2[22] = (unsigned char)((unsigned int)testApp2Proc >> 8);
-    TestApplication2[23] = 0x60; // rts
+    // // proc() 2
+    // TestApplication2[20] = 0x20;
+    // TestApplication2[21] = (unsigned char)testApp2Proc;
+    // TestApplication2[22] = (unsigned char)((unsigned int)testApp2Proc >> 8);
+    // TestApplication2[23] = 0x60; // rts
 
-    // atExit() 2
-    TestApplication2[24] = 0x20;
-    TestApplication2[25] = (unsigned char)(unsigned int)testApp2Exit;
-    TestApplication2[26] = (unsigned char)((unsigned int)testApp2Exit >> 8);
-    TestApplication2[27] = 0x60; // rts
+    // // atExit() 2
+    // TestApplication2[24] = 0x20;
+    // TestApplication2[25] = (unsigned char)(unsigned int)testApp2Exit;
+    // TestApplication2[26] = (unsigned char)((unsigned int)testApp2Exit >> 8);
+    // TestApplication2[27] = 0x60; // rts
+
+    initApi();
 
     initializeTable();
 
@@ -82,21 +85,21 @@ void main(void) {
     pal_col(1, 0x30); // set while color
 
 
-    //allocateProcess((ApplicationHeader*)TestApplication1, TA1_LENGTH);
-    //for (testAppIdx = 0; testAppIdx < TA1_LENGTH; ++testAppIdx) {
-   //     unsigned int* target = getProcessTable()->processes[0].location + testAppIdx;
-   //     *(target) = TestApplication1[testAppIdx];
-   // }
+    allocateProcess((ApplicationHeader*)TestApplication1, TA1_LENGTH);
+    for (testAppIdx = 0; testAppIdx < TA1_LENGTH; ++testAppIdx) {
+       unsigned int* target = getProcessTable()->processes[0].location + testAppIdx;
+       *(target) = TestApplication1[testAppIdx];
+   }
 
-    //getProcessTable()->processes[0].state = PS_LOADED;
+    getProcessTable()->processes[0].state = PS_LOADED;
 
-    //allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
-   // for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
-    //    unsigned int* target = getProcessTable()->processes[1].location + testAppIdx;
-   //     *(target) = TestApplication2[testAppIdx];
-    //}
+//     allocateProcess((ApplicationHeader*)TestApplication2, TA2_LENGTH);
+//    for (testAppIdx = 0; testAppIdx < TA2_LENGTH; ++testAppIdx) {
+//        unsigned int* target = getProcessTable()->processes[1].location + testAppIdx;
+//        *(target) = TestApplication2[testAppIdx];
+//     }
 
-    // getProcessTable()->processes[1].state = PS_LOADED;
+//     getProcessTable()->processes[1].state = PS_LOADED;
 
     // rendering is disabled at the startup, the palette is all black
 

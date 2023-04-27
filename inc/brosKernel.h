@@ -2,6 +2,7 @@
 #define BROS_KERNEL_H
 
 #include "bros.h"
+#include "brosAPI.h"
 #include "neslib.h"
 
 // TODO: These eventually need to be declared in a way where we know how to call them from apps

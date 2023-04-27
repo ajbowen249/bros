@@ -52,6 +52,8 @@ KERNEL := $(BUILD_DIR)/bros.nes
 # Make sure intermediate files are not deleted
 .PRECIOUS: $(BUILD_DIR)/%.s $(BUILD_DIR)/%.s.app $(BUILD_DIR)/%.o $(BUILD_DIR)/%.o.app
 
+kernel: $(KERNEL)
+
 all: $(KERNEL) $(APP_BINARY_FILES)
 
 # Kernel build. This makes the actual NES ROM file
